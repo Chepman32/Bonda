@@ -88,6 +88,10 @@ export function AppNavigator() {
           options={{
             animation: 'slide_from_bottom',
             presentation: 'transparentModal',
+            contentStyle: {
+              backgroundColor: 'transparent',
+            },
+            gestureEnabled: false,
           }}
         />
         <Stack.Screen
