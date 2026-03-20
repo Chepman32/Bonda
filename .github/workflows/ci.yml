@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'codex/**'
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.11.0
+          cache: yarn
+
+      - name: Install JavaScript dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Ruby gems
+        run: bundle install
+
+      - name: Install CocoaPods
+        run: yarn pods
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Test
+        run: yarn test:coverage
+
+      - name: Android smoke build
+        run: cd android && ./gradlew assembleDebug
+
+      - name: iOS smoke build
+        run: xcodebuild -workspace ios/Bonda.xcworkspace -scheme Bonda -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build

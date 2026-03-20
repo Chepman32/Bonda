@@ -1,12 +1,24 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
-require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
+def node_require(script)
+  require Pod::Executable.execute_command('node', ['-p',
+    "require.resolve(
+      '#{script}',
+      {paths: [process.argv[1]]},
+    )", __dir__]).strip
+end
+
+node_require('react-native/scripts/react_native_pods.rb')
+node_require('react-native-permissions/scripts/setup.rb')
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
+setup_permissions([
+  'Contacts',
+])
+
+ENVFILES = {
+  'Debug' => '$(PODS_ROOT)/../../.env.development',
+  'Release' => '$(PODS_ROOT)/../../.env.production',
+}
 
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
@@ -30,5 +42,13 @@ target 'Bonda' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'react-native-config'
+
+      target.build_configurations.each do |build_configuration|
+        build_configuration.build_settings['ENVFILE'] = ENVFILES[build_configuration.name]
+      end
+    end
   end
 end

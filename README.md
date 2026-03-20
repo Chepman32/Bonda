@@ -1,97 +1,89 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Bonda
 
-# Getting Started
+Bonda is an offline-first React Native application for privately mapping, rating, and reviewing your relationship graph on-device. The app is iPhone-first, keeps data local, and works without accounts or network sync.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Requirements
 
-## Step 1: Start Metro
+- Node `20.19.4+`
+- Yarn `1.22.x`
+- Ruby/Bundler for CocoaPods
+- Xcode 16+ for iOS builds
+- Android Studio for Android builds
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+`.nvmrc` and CI currently pin Node `22.11.0` as the default development baseline, but the supported minimum matches the React Native toolchain requirement.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Setup
 
 ```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+yarn install
+bundle install
+yarn pods
 ```
 
-## Step 2: Build and run your app
+Default local development uses `.env.development`. Alternative build configs are provided with `.env.staging` and `.env.production`.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+## Running
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
+yarn start
+yarn ios
 yarn android
 ```
 
-### iOS
+Additional scripts:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+- `yarn ios:staging`
+- `yarn android:staging`
+- `yarn android:release`
+- `yarn lint`
+- `yarn typecheck`
+- `yarn test`
+- `yarn test:coverage`
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Architecture
 
-```sh
-bundle install
-```
+The codebase follows a clean architecture split under `src/`:
 
-Then, and every time you update your native dependencies, run:
+- `components`, `screens`, `navigation`, `theme`: presentation layer
+- `store`: app state orchestration with Zustand slices
+- `services`: business logic, repositories, device integrations, persistence, export
+- `models`, `constants`, `utils`, `locales`: shared domain and infrastructure support
 
-```sh
-bundle exec pod install
-```
+Persistence is split between encrypted MMKV for settings and lightweight secure values, and Nitro SQLite for structured app data and history.
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Key Product Areas
 
-```sh
-# Using npm
-npm run ios
+- Contact permission and on-device import pipeline
+- Name normalization and deterministic deduplication
+- Gesture-driven evaluation deck with confidence scoring
+- Heuristic clustering and insight generation
+- Local diagnostics logging and export sharing
+- Poster, stats, PDF, and loop export generation
 
-# OR using Yarn
-yarn ios
-```
+## Environment Variables
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+| Variable              | Description                                                 | Example       |
+| --------------------- | ----------------------------------------------------------- | ------------- |
+| `APP_ENV`             | Environment label surfaced in diagnostics and app metadata  | `development` |
+| `APP_DISPLAY_VERSION` | Human-readable display version                              | `0.1.0-dev`   |
+| `ENABLE_DEMO_MODE`    | Enables preview contacts when real contacts are unavailable | `true`        |
+| `ENABLE_DIAGNOSTICS`  | Enables on-device diagnostics capture and viewer            | `true`        |
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+These files are committed because they contain non-secret build metadata only. No credentials or signing secrets belong in `.env`.
 
-## Step 3: Modify your app
+## Testing
 
-Now that you have successfully run the app, let's make changes!
+The Jest suite covers scoring, clustering, insight generation, contact normalization, repositories, store flows, and selected UI components. Coverage thresholds are enforced in `jest.config.js`, with higher thresholds on the core business logic modules.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## CI
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+GitHub Actions runs lint, typecheck, unit/integration tests, CocoaPods install, and smoke builds for Android and iOS. See `.github/workflows/ci.yml`.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## ADRs
 
-## Congratulations! :tada:
+Architecture decision records live in `docs/adr/`:
 
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- `0001-clean-architecture.md`
+- `0002-scoring-model.md`
+- `0003-local-privacy-model.md`
+- `0004-export-pipeline.md`
