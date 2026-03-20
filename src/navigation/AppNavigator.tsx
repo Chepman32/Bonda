@@ -26,6 +26,13 @@ enableFreeze(true);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const dismissableScreenOptions = {
+  animation: 'slide_from_bottom' as const,
+  fullScreenGestureEnabled: true,
+  gestureEnabled: true,
+  presentation: 'modal' as const,
+};
+
 export function AppNavigator() {
   const bootstrapApp = useAppStore(state => state.bootstrapApp);
 
@@ -63,24 +70,36 @@ export function AppNavigator() {
           component={EvaluationDeckScreen}
           name={ROUTES.EvaluationDeck}
         />
-        <Stack.Screen component={ReviewQueueScreen} name={ROUTES.ReviewQueue} />
+        <Stack.Screen
+          component={ReviewQueueScreen}
+          name={ROUTES.ReviewQueue}
+          options={dismissableScreenOptions}
+        />
         <Stack.Screen
           component={ClusterEditorScreen}
           name={ROUTES.ClusterEditor}
+          options={dismissableScreenOptions}
         />
         <Stack.Screen component={SummaryScreen} name={ROUTES.Summary} />
         <Stack.Screen
           component={PersonInsightScreen}
           name={ROUTES.PersonInsight}
+          options={dismissableScreenOptions}
         />
         <Stack.Screen
           component={SessionHistoryScreen}
           name={ROUTES.SessionHistory}
+          options={dismissableScreenOptions}
         />
-        <Stack.Screen component={SettingsScreen} name={ROUTES.Settings} />
+        <Stack.Screen
+          component={SettingsScreen}
+          name={ROUTES.Settings}
+          options={dismissableScreenOptions}
+        />
         <Stack.Screen
           component={ExportSnapshotScreen}
           name={ROUTES.ExportSnapshot}
+          options={dismissableScreenOptions}
         />
         <Stack.Screen
           component={ContactDetailScreen}
@@ -97,9 +116,7 @@ export function AppNavigator() {
         <Stack.Screen
           component={PrivacyInfoScreen}
           name={ROUTES.PrivacyInfo}
-          options={{
-            animation: 'slide_from_right',
-          }}
+          options={dismissableScreenOptions}
         />
       </Stack.Navigator>
     </NavigationContainer>

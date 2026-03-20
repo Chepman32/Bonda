@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Canvas, Circle, Group } from '@shopify/react-native-skia';
 
 import type { BubbleNode } from '@/models/entities';
@@ -12,8 +12,19 @@ interface BubbleMapProps {
 
 export function BubbleMap({ nodes, onSelect }: BubbleMapProps) {
   const theme = useAppTheme();
-  const size = 320;
+  const { width } = useWindowDimensions();
+  const size = Math.min(width - 40, 360);
   const center = size / 2;
+  const availableRadius = center - 14;
+  const orbitScale = nodes.reduce((currentScale, node) => {
+    if (node.orbit <= 0) {
+      return currentScale;
+    }
+
+    const haloRadius = node.radius + 10;
+    const nextScale = (availableRadius - haloRadius) / node.orbit;
+    return Math.min(currentScale, nextScale);
+  }, 1);
 
   return (
     <View style={styles.container}>
@@ -26,8 +37,9 @@ export function BubbleMap({ nodes, onSelect }: BubbleMapProps) {
           opacity={0.55}
         />
         {nodes.map(node => {
-          const x = center + Math.cos(node.angle) * node.orbit;
-          const y = center + Math.sin(node.angle) * node.orbit;
+          const scaledOrbit = node.orbit * Math.max(orbitScale, 0.2);
+          const x = center + Math.cos(node.angle) * scaledOrbit;
+          const y = center + Math.sin(node.angle) * scaledOrbit;
 
           return (
             <Group key={node.id}>
@@ -50,8 +62,10 @@ export function BubbleMap({ nodes, onSelect }: BubbleMapProps) {
         })}
       </Canvas>
       {nodes.map(node => {
-        const x = center + Math.cos(node.angle) * node.orbit - node.radius;
-        const y = center + Math.sin(node.angle) * node.orbit - node.radius;
+        const scaledOrbit = node.orbit * Math.max(orbitScale, 0.2);
+        const hotspotSize = Math.max(node.radius * 2, 44);
+        const x = center + Math.cos(node.angle) * scaledOrbit - hotspotSize / 2;
+        const y = center + Math.sin(node.angle) * scaledOrbit - hotspotSize / 2;
 
         return (
           <Pressable
@@ -64,8 +78,8 @@ export function BubbleMap({ nodes, onSelect }: BubbleMapProps) {
               {
                 left: x,
                 top: y,
-                width: node.radius * 2,
-                height: node.radius * 2,
+                width: hotspotSize,
+                height: hotspotSize,
               },
             ]}
           />
@@ -77,13 +91,14 @@ export function BubbleMap({ nodes, onSelect }: BubbleMapProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 320,
-    height: 320,
     alignSelf: 'center',
+    aspectRatio: 1,
+    width: '100%',
+    maxWidth: 360,
   },
   canvas: {
-    width: 320,
-    height: 320,
+    width: '100%',
+    height: '100%',
   },
   hotspot: {
     position: 'absolute',

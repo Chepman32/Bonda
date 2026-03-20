@@ -3,10 +3,10 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { ContactAvatar } from '@/components/ContactAvatar';
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
-import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
@@ -35,6 +35,7 @@ export function ReviewQueueScreen({ navigation }: Props) {
 
   return (
     <Screen scroll>
+      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>Review queue</Text>
       <FlatList
         data={queueContacts}
@@ -86,7 +87,7 @@ export function ReviewQueueScreen({ navigation }: Props) {
           </View>
           <PrimaryButton
             label="Return to deck"
-            onPress={() => navigation.navigate(ROUTES.EvaluationDeck)}
+            onPress={() => navigation.goBack()}
           />
         </GlassCard>
       ) : (

@@ -1,13 +1,18 @@
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
+import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { formatSessionDate } from '@/utils/formatting';
 import { useAppTheme } from '@/theme';
 
-export function SessionHistoryScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'SessionHistory'>;
+
+export function SessionHistoryScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const history = useAppStore(state => state.history);
   const loadHistory = useAppStore(state => state.loadHistory);
@@ -18,6 +23,7 @@ export function SessionHistoryScreen() {
 
   return (
     <Screen>
+      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>Session history</Text>
       <FlatList
         data={history}

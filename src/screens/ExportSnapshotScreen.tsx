@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { BubbleMap } from '@/components/BubbleMap';
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
@@ -19,7 +20,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ExportSnapshot'>;
 
 const exportTypes: ExportPreset['type'][] = ['poster', 'stats', 'loop', 'pdf'];
 
-export function ExportSnapshotScreen({}: Props) {
+export function ExportSnapshotScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const exportHideNames = useAppStore(state => state.settings.exportHideNames);
   const contacts = useAppStore(state => state.contacts);
@@ -53,6 +54,7 @@ export function ExportSnapshotScreen({}: Props) {
 
   return (
     <Screen scroll>
+      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>Export snapshot</Text>
       <View ref={exportCardRef} collapsable={false}>
         <GlassCard style={styles.preview}>

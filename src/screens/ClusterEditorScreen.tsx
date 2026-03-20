@@ -3,10 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { BubbleMap } from '@/components/BubbleMap';
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
 import { buildBubbleNodes } from '@/services/insightService';
-import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
@@ -36,6 +36,7 @@ export function ClusterEditorScreen({ navigation }: Props) {
 
   return (
     <Screen scroll>
+      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>Cluster editor</Text>
       <BubbleMap
         nodes={nodes}
@@ -85,7 +86,7 @@ export function ClusterEditorScreen({ navigation }: Props) {
         ))}
       </View>
       <Text
-        onPress={() => navigation.navigate(ROUTES.EvaluationDeck)}
+        onPress={() => navigation.goBack()}
         style={[styles.returnLink, { color: theme.textMuted }]}
       >
         Return to evaluation deck

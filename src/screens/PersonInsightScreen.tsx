@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { ContactAvatar } from '@/components/ContactAvatar';
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
 import { getContactPlacementDescription } from '@/services/insightService';
@@ -12,7 +13,7 @@ import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PersonInsight'>;
 
-export function PersonInsightScreen({ route }: Props) {
+export function PersonInsightScreen({ navigation, route }: Props) {
   const theme = useAppTheme();
   const contact = useAppStore(state =>
     state.contacts.find(item => item.id === route.params.contactId),
@@ -26,6 +27,7 @@ export function PersonInsightScreen({ route }: Props) {
   if (!contact) {
     return (
       <Screen contentStyle={styles.empty}>
+        <DismissButton onPress={() => navigation.goBack()} />
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
           Contact not found.
         </Text>
@@ -35,6 +37,7 @@ export function PersonInsightScreen({ route }: Props) {
 
   return (
     <Screen scroll>
+      <DismissButton onPress={() => navigation.goBack()} />
       <GlassCard style={styles.header}>
         <ContactAvatar contact={contact} size={84} />
         <Text style={[styles.name, { color: theme.text }]}>

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
@@ -27,6 +28,7 @@ export function SettingsScreen({ navigation }: Props) {
 
   return (
     <Screen scroll>
+      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>
         Settings and privacy
       </Text>

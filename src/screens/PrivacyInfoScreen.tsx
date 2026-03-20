@@ -1,9 +1,12 @@
 import React from 'react';
 import { HardDriveDownload, Lock, Shield } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
+import type { RootStackParamList } from '@/navigation/types';
 import { useAppTheme } from '@/theme';
 
 const cards = [
@@ -24,11 +27,14 @@ const cards = [
   },
 ];
 
-export function PrivacyInfoScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'PrivacyInfo'>;
+
+export function PrivacyInfoScreen({ navigation }: Props) {
   const theme = useAppTheme();
 
   return (
     <Screen scroll>
+      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>
         Privacy at the center
       </Text>
