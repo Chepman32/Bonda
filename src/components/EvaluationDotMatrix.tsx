@@ -9,6 +9,8 @@ interface EvaluationDotMatrixProps {
   onColumnSelect: (colIndex: number, rowIndex: number) => void;
 }
 
+const GREEN = '#6EE7B7';
+
 const COLUMN_SPECS = [
   { label: 'Importance' },
   { label: 'Comfort' },
@@ -53,16 +55,24 @@ export function EvaluationDotMatrix({
             <View key={`col-${colIndex}`} style={styles.column}>
               {rows.map(rowIndex => {
                 const isSelected = selectedRow === rowIndex;
-                const distance =
-                  selectedRow !== undefined
-                    ? Math.abs(rowIndex - selectedRow)
-                    : rowCount;
+                const isBelow =
+                  selectedRow !== undefined && rowIndex > selectedRow;
+                const isGreen = isSelected || isBelow;
+                const dotColor = isGreen ? GREEN : theme.accent;
                 const outerOpacity = isSelected
-                  ? 0.28
-                  : Math.max(0.08, 0.2 - distance * 0.03);
+                  ? 0.35
+                  : isBelow
+                  ? 0.22
+                  : selectedRow !== undefined
+                  ? 0.08
+                  : 0.15;
                 const innerOpacity = isSelected
                   ? 1
-                  : Math.max(0.22, 0.72 - distance * 0.12);
+                  : isBelow
+                  ? 0.7
+                  : selectedRow !== undefined
+                  ? 0.22
+                  : 0.4;
 
                 return (
                   <Pressable
@@ -78,7 +88,7 @@ export function EvaluationDotMatrix({
                       style={[
                         styles.outerDot,
                         {
-                          backgroundColor: theme.accent,
+                          backgroundColor: dotColor,
                           opacity: outerOpacity,
                           transform: [{ scale: isSelected ? 1.08 : 1 }],
                         },
@@ -88,7 +98,7 @@ export function EvaluationDotMatrix({
                         style={[
                           styles.innerDot,
                           {
-                            backgroundColor: theme.accent,
+                            backgroundColor: dotColor,
                             opacity: innerOpacity,
                           },
                         ]}
