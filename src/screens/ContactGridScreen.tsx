@@ -1,6 +1,14 @@
-import React, { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useDeferredValue, useMemo, useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Search } from 'lucide-react-native';
 
 import { ContactAvatar } from '@/components/ContactAvatar';
 import { Screen } from '@/components/Screen';
@@ -12,12 +20,15 @@ import type { NormalizedContact } from '@/models/entities';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ContactGrid'>;
 
-const NUM_COLUMNS = 4;
+const NUM_COLUMNS = 3;
+const AVATAR_SIZE = 124;
 
 export function ContactGridScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const contacts = useAppStore(state => state.contacts);
   const evaluations = useAppStore(state => state.evaluations);
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
 
   const evaluatedIds = useMemo(
     () => new Set(Object.values(evaluations).map(e => e.contactId)),
@@ -30,6 +41,27 @@ export function ContactGridScreen({ navigation }: Props) {
     [contacts],
   );
 
+  const filteredContacts = useMemo(() => {
+    const normalizedQuery = deferredQuery.trim().toLocaleLowerCase();
+    if (!normalizedQuery) {
+      return sortedContacts;
+    }
+
+    return sortedContacts.filter(contact => {
+      const displayName = contact.displayName.toLocaleLowerCase();
+      const company = contact.company?.toLocaleLowerCase() ?? '';
+      const givenName = contact.givenName.toLocaleLowerCase();
+      const familyName = contact.familyName.toLocaleLowerCase();
+
+      return (
+        displayName.includes(normalizedQuery) ||
+        company.includes(normalizedQuery) ||
+        givenName.includes(normalizedQuery) ||
+        familyName.includes(normalizedQuery)
+      );
+    });
+  }, [deferredQuery, sortedContacts]);
+
   const renderItem = ({ item }: { item: NormalizedContact }) => {
     const isEvaluated = evaluatedIds.has(item.id);
     return (
@@ -40,12 +72,16 @@ export function ContactGridScreen({ navigation }: Props) {
         }
       >
         <View>
-          <ContactAvatar contact={item} size={56} />
+          <ContactAvatar
+            contact={item}
+            size={AVATAR_SIZE}
+            variant="portraitCard"
+          />
           {isEvaluated && (
             <View style={[styles.badge, { backgroundColor: '#059669' }]} />
           )}
         </View>
-        <Text numberOfLines={1} style={[styles.name, { color: theme.text }]}>
+        <Text numberOfLines={2} style={[styles.name, { color: theme.text }]}>
           {item.displayName}
         </Text>
       </Pressable>
@@ -57,13 +93,35 @@ export function ContactGridScreen({ navigation }: Props) {
       <View style={styles.dragHandleRow}>
         <View style={styles.dragHandle} />
       </View>
+      <View
+        style={[
+          styles.searchShell,
+          {
+            backgroundColor: theme.panelStrong,
+            borderColor: theme.border,
+          },
+        ]}
+      >
+        <Search color={theme.textMuted} size={18} strokeWidth={2.2} />
+        <TextInput
+          placeholder="Search contacts"
+          placeholderTextColor={theme.textMuted}
+          style={[styles.searchInput, { color: theme.text }]}
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+          autoCapitalize="none"
+          clearButtonMode="while-editing"
+        />
+      </View>
       <FlatList
-        data={sortedContacts}
+        data={filteredContacts}
         keyExtractor={item => item.id}
         numColumns={NUM_COLUMNS}
         renderItem={renderItem}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       />
     </Screen>
   );
@@ -80,30 +138,47 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#6B7280',
   },
+  searchShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
   grid: {
+    gap: 8,
     paddingBottom: 24,
   },
   cell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    gap: 6,
+    paddingVertical: 18,
+    gap: 10,
     maxWidth: `${100 / NUM_COLUMNS}%`,
   },
   badge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: '#000',
+    right: 10,
+    bottom: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 3,
+    borderColor: '#08101E',
   },
   name: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '600',
     textAlign: 'center',
-    paddingHorizontal: 2,
+    paddingHorizontal: 8,
   },
 });
