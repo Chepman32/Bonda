@@ -21,6 +21,7 @@ export const ROUTES = {
   ExportSnapshot: 'ExportSnapshot',
   ContactDetail: 'ContactDetail',
   PrivacyInfo: 'PrivacyInfo',
+  ContactGrid: 'ContactGrid',
 } as const;
 
 export const CONTACT_TAGS: Array<{

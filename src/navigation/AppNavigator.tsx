@@ -6,6 +6,7 @@ import { enableFreeze } from 'react-native-screens';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { ContactDetailScreen } from '@/screens/ContactDetailScreen';
+import { ContactGridScreen } from '@/screens/ContactGridScreen';
 import { ContactsPermissionScreen } from '@/screens/ContactsPermissionScreen';
 import { ClusterEditorScreen } from '@/screens/ClusterEditorScreen';
 import { EvaluationDeckScreen } from '@/screens/EvaluationDeckScreen';
@@ -112,6 +113,11 @@ export function AppNavigator() {
             },
             gestureEnabled: false,
           }}
+        />
+        <Stack.Screen
+          component={ContactGridScreen}
+          name={ROUTES.ContactGrid}
+          options={dismissableScreenOptions}
         />
         <Stack.Screen
           component={PrivacyInfoScreen}

@@ -16,5 +16,6 @@ export type RootStackParamList = {
   ExportSnapshot: undefined;
   ContactDetail: { contactId: string };
   PrivacyInfo: undefined;
+  ContactGrid: undefined;
   Main: NavigatorScreenParams<Record<string, never>>;
 };

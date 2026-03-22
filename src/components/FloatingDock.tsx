@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { CheckCircle, RotateCcw, SkipForward } from 'lucide-react-native';
+import { Binoculars, RotateCcw, SkipForward } from 'lucide-react-native';
 
 import { GlassCard } from '@/components/GlassCard';
 import { useAppTheme } from '@/theme';
@@ -8,8 +8,7 @@ import { useAppTheme } from '@/theme';
 interface FloatingDockProps {
   onUndo: () => void;
   onSkip: () => void;
-  onConfirm: () => void;
-  confirmEnabled: boolean;
+  onViewAll: () => void;
 }
 
 export function FloatingDock(props: FloatingDockProps) {
@@ -24,10 +23,10 @@ export function FloatingDock(props: FloatingDockProps) {
       disabled: false,
     },
     {
-      label: 'Confirm',
-      icon: CheckCircle,
-      onPress: props.onConfirm,
-      disabled: !props.confirmEnabled,
+      label: 'View All',
+      icon: Binoculars,
+      onPress: props.onViewAll,
+      disabled: false,
     },
   ];
 

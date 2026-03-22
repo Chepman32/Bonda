@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -10,6 +10,7 @@ import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { deriveColumnSelectionsFromScores } from '@/services/scoringService';
+import { fireThresholdHaptic } from '@/services/device/hapticsService';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
 
@@ -21,6 +22,7 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   const evaluations = useAppStore(state => state.evaluations);
   const session = useAppStore(state => state.session);
   const selectedContactId = useAppStore(state => state.selectedContactId);
+  const settings = useAppStore(state => state.settings);
   const commitMatrixEvaluation = useAppStore(
     state => state.commitMatrixEvaluation,
   );
@@ -59,6 +61,31 @@ export function EvaluationDeckScreen({ navigation }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentContact?.id]);
+
+  const handleColumnPanUpdate = useCallback(
+    (colIndex: number, rowIndex: number) => {
+      setPendingSelections(prev => {
+        if (prev[colIndex] === rowIndex) return prev;
+        fireThresholdHaptic(settings);
+        return { ...prev, [colIndex]: rowIndex };
+      });
+    },
+    [settings],
+  );
+
+  const handleColumnPanEnd = useCallback(() => {
+    setPendingSelections(prev => {
+      if (Object.keys(prev).length === 5) {
+        void commitMatrixEvaluation({
+          columnCount: 5,
+          rowCount: 9,
+          selections: prev,
+        });
+        return {};
+      }
+      return prev;
+    });
+  }, [commitMatrixEvaluation]);
 
   if (!currentContact) {
     return (
@@ -107,22 +134,14 @@ export function EvaluationDeckScreen({ navigation }: Props) {
               setPendingSelections({});
             }
           }}
+          onColumnPanUpdate={handleColumnPanUpdate}
+          onColumnPanEnd={handleColumnPanEnd}
         />
       </GlassCard>
       <FloatingDock
-        confirmEnabled={Object.keys(pendingSelections).length === 5}
         onUndo={() => void undoLastEvaluation()}
         onSkip={() => void skipCurrentContact()}
-        onConfirm={() => {
-          if (Object.keys(pendingSelections).length === 5) {
-            void commitMatrixEvaluation({
-              columnCount: 5,
-              rowCount: 9,
-              selections: pendingSelections,
-            });
-            setPendingSelections({});
-          }
-        }}
+        onViewAll={() => navigation.navigate(ROUTES.ContactGrid)}
       />
     </Screen>
   );
