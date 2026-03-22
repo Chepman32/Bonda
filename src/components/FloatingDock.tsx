@@ -1,11 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import {
-  CirclePause,
-  Layers3,
-  RotateCcw,
-  SkipForward,
-} from 'lucide-react-native';
+import { CheckCircle, RotateCcw, SkipForward } from 'lucide-react-native';
 
 import { GlassCard } from '@/components/GlassCard';
 import { useAppTheme } from '@/theme';
@@ -13,18 +8,27 @@ import { useAppTheme } from '@/theme';
 interface FloatingDockProps {
   onUndo: () => void;
   onSkip: () => void;
-  onClusters: () => void;
-  onPause: () => void;
+  onConfirm: () => void;
+  confirmEnabled: boolean;
 }
 
 export function FloatingDock(props: FloatingDockProps) {
   const theme = useAppTheme();
 
   const actions = [
-    { label: 'Undo', icon: RotateCcw, onPress: props.onUndo },
-    { label: 'Skip', icon: SkipForward, onPress: props.onSkip },
-    { label: 'Groups', icon: Layers3, onPress: props.onClusters },
-    { label: 'Pause', icon: CirclePause, onPress: props.onPause },
+    { label: 'Undo', icon: RotateCcw, onPress: props.onUndo, disabled: false },
+    {
+      label: 'Skip',
+      icon: SkipForward,
+      onPress: props.onSkip,
+      disabled: false,
+    },
+    {
+      label: 'Confirm',
+      icon: CheckCircle,
+      onPress: props.onConfirm,
+      disabled: !props.confirmEnabled,
+    },
   ];
 
   return (
@@ -35,12 +39,22 @@ export function FloatingDock(props: FloatingDockProps) {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={action.label}
+            disabled={action.disabled}
             key={action.label}
             onPress={action.onPress}
-            style={styles.button}
+            style={[styles.button, action.disabled && styles.buttonDisabled]}
           >
-            <Icon color={theme.text} size={18} strokeWidth={2.2} />
-            <Text style={[styles.label, { color: theme.textMuted }]}>
+            <Icon
+              color={action.disabled ? theme.textMuted : theme.text}
+              size={18}
+              strokeWidth={2.2}
+            />
+            <Text
+              style={[
+                styles.label,
+                { color: action.disabled ? theme.textMuted : theme.textMuted },
+              ]}
+            >
               {action.label}
             </Text>
           </Pressable>
@@ -60,6 +74,9 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     gap: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.35,
   },
   label: {
     fontSize: 11,

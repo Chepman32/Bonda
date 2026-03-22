@@ -85,27 +85,17 @@ export function EvaluationDeckScreen({ navigation }: Props) {
             <Text style={[styles.contactName, { color: theme.text }]}>
               {currentContact.displayName}
             </Text>
-            <Text style={[styles.contactMeta, { color: theme.textMuted }]}>
-              {currentContact.company ||
-                currentContact.inferredGroup ||
-                'Personal contact'}
-            </Text>
           </View>
-        </View>
-        <View style={styles.metrics}>
-          <Text style={[styles.metricPill, { color: theme.textMuted }]}>
-            {currentContact.phoneNumbers.length} phone
-          </Text>
-          <Text style={[styles.metricPill, { color: theme.textMuted }]}>
-            {currentContact.emailAddresses.length} email
-          </Text>
-          <Text style={[styles.metricPill, { color: theme.textMuted }]}>
-            Confidence {Math.round(currentContact.relationConfidence * 100)}%
-          </Text>
         </View>
         <EvaluationDotMatrix
           selections={pendingSelections}
           onColumnSelect={(colIndex, rowIndex) => {
+            if (pendingSelections[colIndex] === rowIndex) {
+              const next = { ...pendingSelections };
+              delete next[colIndex];
+              setPendingSelections(next);
+              return;
+            }
             const next = { ...pendingSelections, [colIndex]: rowIndex };
             setPendingSelections(next);
             if (Object.keys(next).length === 5) {
@@ -120,10 +110,19 @@ export function EvaluationDeckScreen({ navigation }: Props) {
         />
       </GlassCard>
       <FloatingDock
+        confirmEnabled={Object.keys(pendingSelections).length === 5}
         onUndo={() => void undoLastEvaluation()}
         onSkip={() => void skipCurrentContact()}
-        onClusters={() => navigation.navigate(ROUTES.ClusterEditor)}
-        onPause={() => navigation.navigate(ROUTES.ReviewQueue)}
+        onConfirm={() => {
+          if (Object.keys(pendingSelections).length === 5) {
+            void commitMatrixEvaluation({
+              columnCount: 5,
+              rowCount: 9,
+              selections: pendingSelections,
+            });
+            setPendingSelections({});
+          }
+        }}
       />
     </Screen>
   );

@@ -9,7 +9,7 @@ interface EvaluationDotMatrixProps {
   onColumnSelect: (colIndex: number, rowIndex: number) => void;
 }
 
-const GREEN = '#6EE7B7';
+const GREEN = '#059669';
 
 const COLUMN_SPECS = [
   { label: 'Importance' },
@@ -111,9 +111,6 @@ export function EvaluationDotMatrix({
           );
         })}
       </View>
-      <Text style={[styles.hint, { color: theme.textMuted }]}>
-        Score each dimension — tap to select a level
-      </Text>
     </View>
   );
 }
