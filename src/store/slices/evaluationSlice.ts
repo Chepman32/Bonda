@@ -11,8 +11,11 @@ import { getDataRepository } from '@/services/repositories/dataRepository';
 import { getDiagnosticsRepository } from '@/services/repositories/diagnosticsRepository';
 import {
   deriveConfidence,
+  deriveMatrixConfidence,
+  deriveScoresFromMatrixSelection,
   deriveScoresFromGesture,
   type GestureCommit,
+  type MatrixCommit,
 } from '@/services/scoringService';
 import type { AppStoreShape } from '@/store/storeShape';
 import type { StoreSlices } from '@/store/types';
@@ -28,6 +31,7 @@ export interface EvaluationSlice {
   reviewQueueIds: string[];
   startSession: () => Promise<void>;
   commitGestureEvaluation: (gesture: GestureCommit) => Promise<void>;
+  commitMatrixEvaluation: (selection: MatrixCommit) => Promise<void>;
   skipCurrentContact: () => Promise<void>;
   undoLastEvaluation: () => Promise<void>;
   openContactDetail: (contactId: string) => void;
@@ -70,6 +74,69 @@ export const createEvaluationSlice: StateCreator<
   insights: [],
   selectedContactId: undefined,
   reviewQueueIds: [],
+  commitMatrixEvaluation: async selection => {
+    const { session, selectedContactId, contacts, evaluations, settings } =
+      get();
+    if (!session || !selectedContactId) {
+      return;
+    }
+
+    const existingEvaluation = Object.values(evaluations).find(
+      item => item.contactId === selectedContactId,
+    );
+    const nextScores = deriveScoresFromMatrixSelection(selection);
+    const evaluation: ContactEvaluation = {
+      id: existingEvaluation?.id ?? createId(),
+      sessionId: session.id,
+      contactId: selectedContactId,
+      scores: nextScores,
+      tags: existingEvaluation?.tags ?? [],
+      clusterId: existingEvaluation?.clusterId,
+      confidence: deriveMatrixConfidence(selection),
+      skipped: false,
+      reviewBin: undefined,
+      note: existingEvaluation?.note,
+      revisit: existingEvaluation?.revisit ?? false,
+      pinnedToCore:
+        existingEvaluation?.pinnedToCore ?? nextScores.importance > 82,
+      markedDormant:
+        existingEvaluation?.markedDormant ?? nextScores.activity < 28,
+      createdAt: existingEvaluation?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const nextEvaluations = {
+      ...evaluations,
+      [evaluation.id]: evaluation,
+    };
+    const processedCount = Object.keys(nextEvaluations).length;
+    const nextSession = {
+      ...session,
+      processedCount,
+      updatedAt: new Date().toISOString(),
+    };
+    const nextSelectedContactId = getCurrentContactId(
+      contacts,
+      nextEvaluations,
+    );
+    const reviewQueueIds = Object.values(nextEvaluations)
+      .filter(item => item.skipped || item.confidence < 0.8)
+      .map(item => item.contactId);
+
+    fireThresholdHaptic(settings);
+
+    set({
+      evaluations: nextEvaluations,
+      session: nextSession,
+      selectedContactId: nextSelectedContactId,
+      reviewQueueIds,
+    });
+
+    const dataRepository = getDataRepository();
+    await dataRepository.saveEvaluation(evaluation);
+    await dataRepository.saveSession(nextSession);
+    await get().refreshDerivedState();
+  },
   startSession: async () => {
     const dataRepository = getDataRepository();
     const diagnosticsRepository = getDiagnosticsRepository();

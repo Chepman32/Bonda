@@ -1,6 +1,9 @@
 import {
   computeSummaryMetrics,
   deriveConfidence,
+  deriveMatrixConfidence,
+  deriveColumnSelectionsFromScores,
+  deriveScoresFromMatrixSelection,
   deriveScoresFromGesture,
 } from '@/services/scoringService';
 
@@ -44,6 +47,66 @@ describe('scoringService', () => {
         velocityY: 4000,
       }),
     ).toBe(1.5);
+  });
+
+  it('derives scores from matrix selections with all columns at top row', () => {
+    const nextScores = deriveScoresFromMatrixSelection({
+      selections: { 0: 0, 1: 0, 2: 0, 3: 0 },
+      columnCount: 4,
+      rowCount: 6,
+    });
+
+    expect(nextScores.importance).toBe(100);
+    expect(nextScores.comfort).toBe(100);
+    expect(nextScores.activity).toBe(100);
+    expect(nextScores.futureAttention).toBe(100);
+    expect(nextScores.stability).toBe(0);
+    expect(nextScores.complexity).toBe(0);
+    expect(nextScores.supportiveness).toBe(0);
+    expect(nextScores.professionalValue).toBe(0);
+    expect(nextScores.emotionalWeight).toBe(0);
+  });
+
+  it('uses the matrix position to infer confidence for review prioritization', () => {
+    // Near center: row 3 of 6 → t = 1-3/5 = 0.4, |t-0.5| = 0.1 → mean = 0.1 → 0.7 + 0.1*0.6 = 0.76
+    expect(
+      deriveMatrixConfidence({
+        selections: { 0: 3, 1: 3, 2: 3, 3: 3 },
+        columnCount: 4,
+        rowCount: 6,
+      }),
+    ).toBeCloseTo(0.76, 2);
+
+    // Top row: t = 1, |t-0.5| = 0.5 → mean = 0.5 → 0.7 + 0.5*0.6 = 1.0
+    expect(
+      deriveMatrixConfidence({
+        selections: { 0: 0, 1: 0, 2: 0, 3: 0 },
+        columnCount: 4,
+        rowCount: 6,
+      }),
+    ).toBeCloseTo(1.0, 2);
+  });
+
+  it('maps saved relationship scores back into per-column row selections', () => {
+    // makeScores() returns default 50/50/50/50 which maps to center rows
+    expect(deriveColumnSelectionsFromScores(makeScores(), 6)).toEqual({
+      0: 3,
+      1: 3,
+      2: 3,
+      3: 3,
+    });
+
+    expect(
+      deriveColumnSelectionsFromScores(
+        makeScores({
+          importance: 100,
+          comfort: 100,
+          activity: 100,
+          futureAttention: 100,
+        }),
+        6,
+      ),
+    ).toEqual({ 0: 0, 1: 0, 2: 0, 3: 0 });
   });
 
   it('computes shared summary metrics from evaluation sets', () => {

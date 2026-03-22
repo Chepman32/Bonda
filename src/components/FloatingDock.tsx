@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import {
   CirclePause,
-  Eye,
   Layers3,
   RotateCcw,
   SkipForward,
@@ -14,7 +13,6 @@ import { useAppTheme } from '@/theme';
 interface FloatingDockProps {
   onUndo: () => void;
   onSkip: () => void;
-  onDetail: () => void;
   onClusters: () => void;
   onPause: () => void;
 }
@@ -25,7 +23,6 @@ export function FloatingDock(props: FloatingDockProps) {
   const actions = [
     { label: 'Undo', icon: RotateCcw, onPress: props.onUndo },
     { label: 'Skip', icon: SkipForward, onPress: props.onSkip },
-    { label: 'Detail', icon: Eye, onPress: props.onDetail },
     { label: 'Groups', icon: Layers3, onPress: props.onClusters },
     { label: 'Pause', icon: CirclePause, onPress: props.onPause },
   ];

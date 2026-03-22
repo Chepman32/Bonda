@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -21,11 +21,30 @@ export function ModeSelectionScreen({ navigation }: Props) {
   const setSelectedMode = useAppStore(state => state.setSelectedMode);
   const startSession = useAppStore(state => state.startSession);
   const session = useAppStore(state => state.session);
+  const hasUnfinishedSession =
+    session?.status === 'active' || session?.status === 'paused';
+  const availableModes = useMemo(
+    () =>
+      hasUnfinishedSession
+        ? EVALUATION_MODES
+        : EVALUATION_MODES.filter(mode => mode.id !== 'resume'),
+    [hasUnfinishedSession],
+  );
+
+  useEffect(() => {
+    if (!hasUnfinishedSession && selectedMode === 'resume') {
+      setSelectedMode('quick');
+    }
+  }, [hasUnfinishedSession, selectedMode, setSelectedMode]);
 
   async function continueToDeck() {
-    if (selectedMode === 'resume' && session) {
-      navigation.navigate(ROUTES.EvaluationDeck);
-      return;
+    if (selectedMode === 'resume') {
+      if (hasUnfinishedSession) {
+        navigation.navigate(ROUTES.EvaluationDeck);
+        return;
+      }
+
+      setSelectedMode('quick');
     }
 
     await startSession();
@@ -34,18 +53,9 @@ export function ModeSelectionScreen({ navigation }: Props) {
 
   return (
     <Screen scroll>
-      <Text style={[styles.title, { color: theme.text }]}>
-        Choose your rhythm
-      </Text>
-      <Text style={[styles.body, { color: theme.textMuted }]}>
-        Bonda can move quickly, go deeper, or let you pick through your circle
-        by cluster.
-      </Text>
-
       <View style={styles.grid}>
-        {EVALUATION_MODES.map(mode => {
+        {availableModes.map(mode => {
           const selected = selectedMode === mode.id;
-          const disabled = mode.id === 'resume' && !session;
 
           return (
             <GlassCard
@@ -54,7 +64,6 @@ export function ModeSelectionScreen({ navigation }: Props) {
                 styles.card,
                 {
                   borderColor: selected ? theme.accent : theme.border,
-                  opacity: disabled ? 0.45 : 1,
                 },
               ]}
             >
@@ -65,7 +74,6 @@ export function ModeSelectionScreen({ navigation }: Props) {
                 {t(mode.bodyKey)}
               </Text>
               <PrimaryButton
-                disabled={disabled}
                 label={selected ? 'Selected' : 'Select'}
                 onPress={() => setSelectedMode(mode.id)}
                 variant={selected ? 'primary' : 'secondary'}
@@ -84,16 +92,6 @@ export function ModeSelectionScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 32,
-    lineHeight: 38,
-    fontWeight: '700',
-    letterSpacing: -0.8,
-  },
-  body: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
   grid: {
     gap: 14,
   },

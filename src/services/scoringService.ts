@@ -13,6 +13,12 @@ export interface GestureCommit {
   velocityY: number;
 }
 
+export interface MatrixCommit {
+  selections: Record<number, number>; // colIndex → rowIndex
+  columnCount: number; // always 4
+  rowCount: number; // always 6
+}
+
 function adjustBaseScore(value: number, delta: number): number {
   return clamp(value + delta, SCORE_LIMITS.baseMin, SCORE_LIMITS.baseMax);
 }
@@ -73,6 +79,80 @@ export function deriveConfidence(gesture: GestureCommit): number {
     SCORE_LIMITS.confidenceMin,
     SCORE_LIMITS.confidenceMax,
   );
+}
+
+export function deriveScoresFromMatrixSelection(
+  selection: MatrixCommit,
+): RelationshipScores {
+  const { selections, rowCount } = selection;
+  const maxRow = rowCount - 1;
+
+  function colT(col: number): number | null {
+    if (selections[col] === undefined) return null;
+    return 1 - selections[col] / maxRow;
+  }
+
+  const t0 = colT(0);
+  const t1 = colT(1);
+  const t2 = colT(2);
+  const t3 = colT(3);
+
+  return {
+    importance: Math.round(
+      20 + (t0 ?? clamp((DEFAULT_SCORES.importance - 20) / 80, 0, 1)) * 80,
+    ),
+    comfort: Math.round(
+      15 + (t1 ?? clamp((DEFAULT_SCORES.comfort - 15) / 85, 0, 1)) * 85,
+    ),
+    activity: Math.round(
+      10 + (t2 ?? clamp((DEFAULT_SCORES.activity - 10) / 90, 0, 1)) * 90,
+    ),
+    futureAttention: Math.round(
+      10 + (t3 ?? clamp((DEFAULT_SCORES.futureAttention - 10) / 90, 0, 1)) * 90,
+    ),
+    stability: 0,
+    complexity: 0,
+    supportiveness: 0,
+    professionalValue: 0,
+    emotionalWeight: 0,
+  };
+}
+
+export function deriveMatrixConfidence(selection: MatrixCommit): number {
+  const { selections, rowCount } = selection;
+  const maxRow = rowCount - 1;
+  const cols = [0, 1, 2, 3];
+  const distances = cols.map(col => {
+    const rowIndex = selections[col] ?? Math.round(maxRow / 2);
+    const t = 1 - rowIndex / maxRow;
+    return Math.abs(t - 0.5);
+  });
+  const distanceFromCenter =
+    distances.reduce((sum, d) => sum + d, 0) / distances.length;
+
+  return clamp(
+    0.7 + distanceFromCenter * 0.6,
+    SCORE_LIMITS.confidenceMin,
+    SCORE_LIMITS.confidenceMax,
+  );
+}
+
+export function deriveColumnSelectionsFromScores(
+  scores: RelationshipScores,
+  rowCount: number,
+): Record<number, number> {
+  const maxRow = rowCount - 1;
+  const t0 = clamp((scores.importance - 20) / 80, 0, 1);
+  const t1 = clamp((scores.comfort - 15) / 85, 0, 1);
+  const t2 = clamp((scores.activity - 10) / 90, 0, 1);
+  const t3 = clamp((scores.futureAttention - 10) / 90, 0, 1);
+
+  return {
+    0: Math.round((1 - t0) * maxRow),
+    1: Math.round((1 - t1) * maxRow),
+    2: Math.round((1 - t2) * maxRow),
+    3: Math.round((1 - t3) * maxRow),
+  };
 }
 
 export function computeSummaryMetrics(
