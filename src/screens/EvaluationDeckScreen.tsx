@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -32,6 +32,9 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   const [pendingSelections, setPendingSelections] = useState<
     Record<number, number>
   >({});
+  const [isMatrixAdvancing, setIsMatrixAdvancing] = useState(false);
+  const [advanceAnimationToken, setAdvanceAnimationToken] = useState(0);
+  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentContact = contacts.find(
     contact => contact.id === selectedContactId,
@@ -62,30 +65,69 @@ export function EvaluationDeckScreen({ navigation }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentContact?.id]);
 
+  useEffect(
+    () => () => {
+      if (advanceTimeoutRef.current) {
+        clearTimeout(advanceTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const startAdvanceTransition = useCallback(
+    (nextSelections: Record<number, number>) => {
+      if (isMatrixAdvancing) {
+        return;
+      }
+
+      setIsMatrixAdvancing(true);
+      setAdvanceAnimationToken(token => token + 1);
+
+      if (advanceTimeoutRef.current) {
+        clearTimeout(advanceTimeoutRef.current);
+      }
+
+      advanceTimeoutRef.current = setTimeout(() => {
+        void commitMatrixEvaluation({
+          columnCount: 5,
+          rowCount: 9,
+          selections: nextSelections,
+        });
+        setPendingSelections({});
+        setIsMatrixAdvancing(false);
+        advanceTimeoutRef.current = null;
+      }, 430);
+    },
+    [commitMatrixEvaluation, isMatrixAdvancing],
+  );
+
   const handleColumnPanUpdate = useCallback(
     (colIndex: number, rowIndex: number) => {
+      if (isMatrixAdvancing) {
+        return;
+      }
+
       setPendingSelections(prev => {
         if (prev[colIndex] === rowIndex) return prev;
         fireThresholdHaptic(settings);
         return { ...prev, [colIndex]: rowIndex };
       });
     },
-    [settings],
+    [isMatrixAdvancing, settings],
   );
 
   const handleColumnPanEnd = useCallback(() => {
+    if (isMatrixAdvancing) {
+      return;
+    }
+
     setPendingSelections(prev => {
       if (Object.keys(prev).length === 5) {
-        void commitMatrixEvaluation({
-          columnCount: 5,
-          rowCount: 9,
-          selections: prev,
-        });
-        return {};
+        startAdvanceTransition(prev);
       }
       return prev;
     });
-  }, [commitMatrixEvaluation]);
+  }, [isMatrixAdvancing, startAdvanceTransition]);
 
   if (!currentContact) {
     return (
@@ -116,7 +158,13 @@ export function EvaluationDeckScreen({ navigation }: Props) {
         </View>
         <EvaluationDotMatrix
           selections={pendingSelections}
+          interactionDisabled={isMatrixAdvancing}
+          advanceAnimationToken={advanceAnimationToken}
           onColumnSelect={(colIndex, rowIndex) => {
+            if (isMatrixAdvancing) {
+              return;
+            }
+
             if (pendingSelections[colIndex] === rowIndex) {
               const next = { ...pendingSelections };
               delete next[colIndex];
@@ -126,12 +174,7 @@ export function EvaluationDeckScreen({ navigation }: Props) {
             const next = { ...pendingSelections, [colIndex]: rowIndex };
             setPendingSelections(next);
             if (Object.keys(next).length === 5) {
-              void commitMatrixEvaluation({
-                columnCount: 5,
-                rowCount: 9,
-                selections: next,
-              });
-              setPendingSelections({});
+              startAdvanceTransition(next);
             }
           }}
           onColumnPanUpdate={handleColumnPanUpdate}

@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  type SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { useAppTheme } from '@/theme';
 import {
@@ -17,9 +25,12 @@ interface EvaluationDotMatrixProps {
   onColumnSelect: (colIndex: number, rowIndex: number) => void;
   onColumnPanUpdate?: (colIndex: number, rowIndex: number) => void;
   onColumnPanEnd?: () => void;
+  advanceAnimationToken?: number;
+  interactionDisabled?: boolean;
 }
 
 const GREEN = '#059669';
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 const COLUMN_SPECS = [
   { label: 'Importance' },
@@ -29,24 +40,158 @@ const COLUMN_SPECS = [
   { label: 'Warmth' },
 ];
 
+function DotNode({
+  colIndex,
+  rowIndex,
+  selectedRow,
+  theme,
+  resetProgress,
+}: {
+  colIndex: number;
+  rowIndex: number;
+  selectedRow: number | undefined;
+  theme: ReturnType<typeof useAppTheme>;
+  resetProgress: SharedValue<number>;
+}) {
+  const isSelected = selectedRow === rowIndex;
+  const isBelow = selectedRow !== undefined && rowIndex > selectedRow;
+  const isGreen = isSelected || isBelow;
+  const dotColor = isGreen ? GREEN : theme.accent;
+  const outerOpacity = isSelected
+    ? 0.35
+    : isBelow
+    ? 0.22
+    : selectedRow !== undefined
+    ? 0.08
+    : 0.15;
+  const innerOpacity = isSelected
+    ? 1
+    : isBelow
+    ? 0.7
+    : selectedRow !== undefined
+    ? 0.22
+    : 0.4;
+
+  const outerAnimatedStyle = useAnimatedStyle(() => {
+    const phase = interpolate(
+      resetProgress.value,
+      [colIndex * 0.12, 0.9 + colIndex * 0.04],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    const lift = interpolate(phase, [0, 0.45, 1], [0, -8, 40]);
+    const scale = interpolate(
+      phase,
+      [0, 0.5, 1],
+      [isSelected ? 1.08 : 1, 1.12, 0.72],
+    );
+    const opacityMultiplier = interpolate(phase, [0, 0.45, 1], [1, 0.94, 0]);
+
+    return {
+      opacity: outerOpacity * opacityMultiplier,
+      transform: [{ translateY: lift }, { scale }],
+    };
+  }, [colIndex, isSelected, outerOpacity]);
+
+  const innerAnimatedStyle = useAnimatedStyle(() => {
+    const phase = interpolate(
+      resetProgress.value,
+      [colIndex * 0.12, 0.92 + colIndex * 0.04],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      opacity:
+        innerOpacity *
+        interpolate(phase, [0, 0.55, 1], [1, 1, 0], Extrapolation.CLAMP),
+      transform: [
+        {
+          scale: interpolate(
+            phase,
+            [0, 0.45, 1],
+            [1, 1.08, 0.78],
+            Extrapolation.CLAMP,
+          ),
+        },
+      ],
+    };
+  }, [colIndex, innerOpacity]);
+
+  return (
+    <View style={styles.touch}>
+      <AnimatedView
+        style={[
+          styles.outerDot,
+          outerAnimatedStyle,
+          {
+            backgroundColor: dotColor,
+          },
+        ]}
+      >
+        <AnimatedView
+          style={[
+            styles.innerDot,
+            innerAnimatedStyle,
+            {
+              backgroundColor: dotColor,
+            },
+          ]}
+        />
+      </AnimatedView>
+    </View>
+  );
+}
+
 function DotColumn({
   colIndex,
   rowCount,
   selectedRow,
   theme,
   onLayout,
+  resetProgress,
 }: {
   colIndex: number;
   rowCount: number;
   selectedRow: number | undefined;
   theme: ReturnType<typeof useAppTheme>;
   onLayout?: (colIndex: number, x: number, width: number) => void;
+  resetProgress: SharedValue<number>;
 }) {
   const rows = Array.from({ length: rowCount }, (_, i) => i);
+  const columnAnimatedStyle = useAnimatedStyle(() => {
+    const phase = interpolate(
+      resetProgress.value,
+      [colIndex * 0.1, 0.95 + colIndex * 0.04],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      transform: [
+        {
+          translateY: interpolate(
+            phase,
+            [0, 0.3, 1],
+            [0, -4, 14],
+            Extrapolation.CLAMP,
+          ),
+        },
+        {
+          scale: interpolate(
+            phase,
+            [0, 0.35, 1],
+            [1, 1.015, 0.985],
+            Extrapolation.CLAMP,
+          ),
+        },
+      ],
+    };
+  }, [colIndex]);
 
   return (
-    <View
-      style={styles.column}
+    <AnimatedView
+      style={[styles.column, columnAnimatedStyle]}
       onLayout={e => {
         onLayout?.(
           colIndex,
@@ -56,51 +201,18 @@ function DotColumn({
       }}
     >
       {rows.map(rowIndex => {
-        const isSelected = selectedRow === rowIndex;
-        const isBelow = selectedRow !== undefined && rowIndex > selectedRow;
-        const isGreen = isSelected || isBelow;
-        const dotColor = isGreen ? GREEN : theme.accent;
-        const outerOpacity = isSelected
-          ? 0.35
-          : isBelow
-          ? 0.22
-          : selectedRow !== undefined
-          ? 0.08
-          : 0.15;
-        const innerOpacity = isSelected
-          ? 1
-          : isBelow
-          ? 0.7
-          : selectedRow !== undefined
-          ? 0.22
-          : 0.4;
-
         return (
-          <View key={`dot-${colIndex}-${rowIndex}`} style={styles.touch}>
-            <View
-              style={[
-                styles.outerDot,
-                {
-                  backgroundColor: dotColor,
-                  opacity: outerOpacity,
-                  transform: [{ scale: isSelected ? 1.08 : 1 }],
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.innerDot,
-                  {
-                    backgroundColor: dotColor,
-                    opacity: innerOpacity,
-                  },
-                ]}
-              />
-            </View>
-          </View>
+          <DotNode
+            key={`dot-${colIndex}-${rowIndex}`}
+            colIndex={colIndex}
+            rowIndex={rowIndex}
+            selectedRow={selectedRow}
+            theme={theme}
+            resetProgress={resetProgress}
+          />
         );
       })}
-    </View>
+    </AnimatedView>
   );
 }
 
@@ -110,16 +222,58 @@ export function EvaluationDotMatrix({
   onColumnSelect,
   onColumnPanUpdate,
   onColumnPanEnd,
+  advanceAnimationToken = 0,
+  interactionDisabled = false,
 }: EvaluationDotMatrixProps) {
   const theme = useAppTheme();
   const gridHeight = useRef(0);
   const columnFrames = useRef<MatrixColumnFrame[]>([]);
   const lastDragCell = useRef<MatrixCell | null>(null);
   const latestSelections = useRef(selections);
+  const advanceSelectionsSnapshot = useRef<Record<number, number>>({});
+  const previousAdvanceToken = useRef(advanceAnimationToken);
+  const resetProgress = useSharedValue(0);
+  const shellProgress = useSharedValue(0);
+  const displaySelections =
+    interactionDisabled &&
+    Object.keys(advanceSelectionsSnapshot.current).length > 0
+      ? advanceSelectionsSnapshot.current
+      : selections;
 
   useEffect(() => {
     latestSelections.current = selections;
   }, [selections]);
+
+  useEffect(() => {
+    if (advanceAnimationToken === previousAdvanceToken.current) {
+      return;
+    }
+
+    previousAdvanceToken.current = advanceAnimationToken;
+    advanceSelectionsSnapshot.current = selections;
+    resetProgress.value = 0;
+    shellProgress.value = 0;
+    resetProgress.value = withSpring(1, {
+      damping: 18,
+      stiffness: 150,
+      mass: 0.8,
+      velocity: 2.8,
+    });
+    shellProgress.value = withSpring(1, {
+      damping: 15,
+      stiffness: 185,
+      mass: 0.72,
+      velocity: 2.2,
+    });
+  }, [advanceAnimationToken, resetProgress, selections, shellProgress]);
+
+  useEffect(() => {
+    if (!interactionDisabled) {
+      advanceSelectionsSnapshot.current = {};
+      resetProgress.value = 0;
+      shellProgress.value = 0;
+    }
+  }, [interactionDisabled, resetProgress, shellProgress]);
 
   const handleColumnLayout = useCallback(
     (colIndex: number, x: number, width: number) => {
@@ -186,6 +340,7 @@ export function EvaluationDotMatrix({
   }, [onColumnPanEnd]);
 
   const panGesture = Gesture.Pan()
+    .enabled(!interactionDisabled)
     .minDistance(5)
     .onStart(e => {
       runOnJS(emitDragAtPoint)(e.x, e.y);
@@ -197,16 +352,45 @@ export function EvaluationDotMatrix({
       runOnJS(handlePanEnd)();
     });
 
-  const tapGesture = Gesture.Tap().onEnd(e => {
-    runOnJS(handleTap)(e.x, e.y);
-  });
+  const tapGesture = Gesture.Tap()
+    .enabled(!interactionDisabled)
+    .onEnd(e => {
+      runOnJS(handleTap)(e.x, e.y);
+    });
 
   const composed = Gesture.Exclusive(panGesture, tapGesture);
+  const shellAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(
+          shellProgress.value,
+          [0, 0.3, 1],
+          [1, 1.012, 0.992],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        translateY: interpolate(
+          shellProgress.value,
+          [0, 0.32, 1],
+          [0, -6, 10],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+    opacity: interpolate(
+      shellProgress.value,
+      [0, 0.8, 1],
+      [1, 1, 0.94],
+      Extrapolation.CLAMP,
+    ),
+  }));
 
   return (
-    <View
+    <AnimatedView
       style={[
         styles.shell,
+        shellAnimatedStyle,
         {
           backgroundColor: theme.backgroundSecondary,
           borderColor: theme.border,
@@ -236,14 +420,15 @@ export function EvaluationDotMatrix({
               key={`col-${colIndex}`}
               colIndex={colIndex}
               rowCount={rowCount}
-              selectedRow={selections[colIndex]}
+              selectedRow={displaySelections[colIndex]}
               onLayout={handleColumnLayout}
+              resetProgress={resetProgress}
               theme={theme}
             />
           ))}
         </View>
       </GestureDetector>
-    </View>
+    </AnimatedView>
   );
 }
 
