@@ -52,7 +52,7 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   useEffect(() => {
     if (currentEvaluation?.scores) {
       setPendingSelections(
-        deriveColumnSelectionsFromScores(currentEvaluation.scores, 6),
+        deriveColumnSelectionsFromScores(currentEvaluation.scores, 9),
       );
     } else {
       setPendingSelections({});
@@ -78,49 +78,47 @@ export function EvaluationDeckScreen({ navigation }: Props) {
 
   return (
     <Screen contentStyle={styles.deckScreen}>
-      <View style={styles.cardArea}>
-        <GlassCard style={styles.activeCard}>
-          <View style={styles.cardHeader}>
-            <ContactAvatar contact={currentContact} size={44} />
-            <View style={styles.cardHeaderCopy}>
-              <Text style={[styles.contactName, { color: theme.text }]}>
-                {currentContact.displayName}
-              </Text>
-              <Text style={[styles.contactMeta, { color: theme.textMuted }]}>
-                {currentContact.company ||
-                  currentContact.inferredGroup ||
-                  'Personal contact'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.metrics}>
-            <Text style={[styles.metricPill, { color: theme.textMuted }]}>
-              {currentContact.phoneNumbers.length} phone
+      <GlassCard style={styles.activeCard}>
+        <View style={styles.cardHeader}>
+          <ContactAvatar contact={currentContact} size={44} />
+          <View style={styles.cardHeaderCopy}>
+            <Text style={[styles.contactName, { color: theme.text }]}>
+              {currentContact.displayName}
             </Text>
-            <Text style={[styles.metricPill, { color: theme.textMuted }]}>
-              {currentContact.emailAddresses.length} email
-            </Text>
-            <Text style={[styles.metricPill, { color: theme.textMuted }]}>
-              Confidence {Math.round(currentContact.relationConfidence * 100)}%
+            <Text style={[styles.contactMeta, { color: theme.textMuted }]}>
+              {currentContact.company ||
+                currentContact.inferredGroup ||
+                'Personal contact'}
             </Text>
           </View>
-          <EvaluationDotMatrix
-            selections={pendingSelections}
-            onColumnSelect={(colIndex, rowIndex) => {
-              const next = { ...pendingSelections, [colIndex]: rowIndex };
-              setPendingSelections(next);
-              if (Object.keys(next).length === 4) {
-                void commitMatrixEvaluation({
-                  columnCount: 4,
-                  rowCount: 6,
-                  selections: next,
-                });
-                setPendingSelections({});
-              }
-            }}
-          />
-        </GlassCard>
-      </View>
+        </View>
+        <View style={styles.metrics}>
+          <Text style={[styles.metricPill, { color: theme.textMuted }]}>
+            {currentContact.phoneNumbers.length} phone
+          </Text>
+          <Text style={[styles.metricPill, { color: theme.textMuted }]}>
+            {currentContact.emailAddresses.length} email
+          </Text>
+          <Text style={[styles.metricPill, { color: theme.textMuted }]}>
+            Confidence {Math.round(currentContact.relationConfidence * 100)}%
+          </Text>
+        </View>
+        <EvaluationDotMatrix
+          selections={pendingSelections}
+          onColumnSelect={(colIndex, rowIndex) => {
+            const next = { ...pendingSelections, [colIndex]: rowIndex };
+            setPendingSelections(next);
+            if (Object.keys(next).length === 5) {
+              void commitMatrixEvaluation({
+                columnCount: 5,
+                rowCount: 9,
+                selections: next,
+              });
+              setPendingSelections({});
+            }
+          }}
+        />
+      </GlassCard>
       <FloatingDock
         onUndo={() => void undoLastEvaluation()}
         onSkip={() => void skipCurrentContact()}
@@ -151,16 +149,12 @@ function PrimaryDockAction({
 
 const styles = StyleSheet.create({
   deckScreen: {
-    paddingBottom: 24,
-  },
-  cardArea: {
     flex: 1,
-    justifyContent: 'center',
-    minHeight: 420,
+    justifyContent: 'space-between',
+    paddingBottom: 12,
   },
   activeCard: {
-    minHeight: 360,
-    justifyContent: 'space-between',
+    flex: 1,
     gap: 12,
   },
   cardHeader: {

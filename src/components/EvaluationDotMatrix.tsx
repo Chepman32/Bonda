@@ -14,10 +14,11 @@ const COLUMN_SPECS = [
   { label: 'Comfort' },
   { label: 'Activity' },
   { label: 'Future' },
+  { label: 'Warmth' },
 ];
 
 export function EvaluationDotMatrix({
-  rowCount = 6,
+  rowCount = 9,
   selections,
   onColumnSelect,
 }: EvaluationDotMatrixProps) {
@@ -35,10 +36,10 @@ export function EvaluationDotMatrix({
       ]}
     >
       <View style={styles.headerRow}>
-        <View style={styles.rowLabelSpacer} />
         {COLUMN_SPECS.map((spec, colIndex) => (
           <Text
             key={`header-${colIndex}`}
+            numberOfLines={1}
             style={[styles.columnHeader, { color: theme.textMuted }]}
           >
             {spec.label}
@@ -46,12 +47,6 @@ export function EvaluationDotMatrix({
         ))}
       </View>
       <View style={styles.gridRow}>
-        <View style={styles.rowLabels}>
-          <Text style={[styles.rowLabel, { color: theme.textMuted }]}>
-            High
-          </Text>
-          <Text style={[styles.rowLabel, { color: theme.textMuted }]}>Low</Text>
-        </View>
         {COLUMN_SPECS.map((_, colIndex) => {
           const selectedRow = selections[colIndex];
           return (
@@ -115,6 +110,7 @@ export function EvaluationDotMatrix({
 
 const styles = StyleSheet.create({
   shell: {
+    flex: 1,
     borderWidth: 1,
     borderRadius: 30,
     paddingHorizontal: 18,
@@ -125,49 +121,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  rowLabelSpacer: {
-    width: 28,
-  },
   columnHeader: {
     flex: 1,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
     textAlign: 'center',
   },
   gridRow: {
+    flex: 1,
     flexDirection: 'row',
     gap: 4,
   },
-  rowLabels: {
-    width: 28,
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  rowLabel: {
-    fontSize: 9,
-    fontWeight: '600',
-  },
   column: {
     flex: 1,
-    gap: 6,
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   touch: {
-    width: 38,
-    height: 38,
+    width: 46,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
   },
   outerDot: {
-    width: 32,
-    height: 32,
+    width: 38,
+    height: 38,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   innerDot: {
-    width: 18,
-    height: 18,
+    width: 22,
+    height: 22,
     borderRadius: 999,
   },
   hint: {

@@ -51,9 +51,9 @@ describe('scoringService', () => {
 
   it('derives scores from matrix selections with all columns at top row', () => {
     const nextScores = deriveScoresFromMatrixSelection({
-      selections: { 0: 0, 1: 0, 2: 0, 3: 0 },
-      columnCount: 4,
-      rowCount: 6,
+      selections: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
+      columnCount: 5,
+      rowCount: 9,
     });
 
     expect(nextScores.importance).toBe(100);
@@ -62,38 +62,39 @@ describe('scoringService', () => {
     expect(nextScores.futureAttention).toBe(100);
     expect(nextScores.stability).toBe(0);
     expect(nextScores.complexity).toBe(0);
-    expect(nextScores.supportiveness).toBe(0);
+    expect(nextScores.supportiveness).toBe(50);
     expect(nextScores.professionalValue).toBe(0);
     expect(nextScores.emotionalWeight).toBe(0);
   });
 
   it('uses the matrix position to infer confidence for review prioritization', () => {
-    // Near center: row 3 of 6 → t = 1-3/5 = 0.4, |t-0.5| = 0.1 → mean = 0.1 → 0.7 + 0.1*0.6 = 0.76
+    // Near center: row 3 of 9 → t = 1-3/8 = 0.625, |t-0.5| = 0.125 → mean = 0.125 → 0.7 + 0.125*0.6 = 0.775
     expect(
       deriveMatrixConfidence({
-        selections: { 0: 3, 1: 3, 2: 3, 3: 3 },
-        columnCount: 4,
-        rowCount: 6,
+        selections: { 0: 3, 1: 3, 2: 3, 3: 3, 4: 3 },
+        columnCount: 5,
+        rowCount: 9,
       }),
-    ).toBeCloseTo(0.76, 2);
+    ).toBeCloseTo(0.775, 2);
 
     // Top row: t = 1, |t-0.5| = 0.5 → mean = 0.5 → 0.7 + 0.5*0.6 = 1.0
     expect(
       deriveMatrixConfidence({
-        selections: { 0: 0, 1: 0, 2: 0, 3: 0 },
-        columnCount: 4,
-        rowCount: 6,
+        selections: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 },
+        columnCount: 5,
+        rowCount: 9,
       }),
     ).toBeCloseTo(1.0, 2);
   });
 
   it('maps saved relationship scores back into per-column row selections', () => {
-    // makeScores() returns default 50/50/50/50 which maps to center rows
-    expect(deriveColumnSelectionsFromScores(makeScores(), 6)).toEqual({
-      0: 3,
-      1: 3,
-      2: 3,
-      3: 3,
+    // makeScores() returns default 50/50/50/50
+    expect(deriveColumnSelectionsFromScores(makeScores(), 9)).toEqual({
+      0: 5,
+      1: 5,
+      2: 4,
+      3: 4,
+      4: 4,
     });
 
     expect(
@@ -104,9 +105,9 @@ describe('scoringService', () => {
           activity: 100,
           futureAttention: 100,
         }),
-        6,
+        9,
       ),
-    ).toEqual({ 0: 0, 1: 0, 2: 0, 3: 0 });
+    ).toEqual({ 0: 0, 1: 0, 2: 0, 3: 0, 4: 4 });
   });
 
   it('computes shared summary metrics from evaluation sets', () => {

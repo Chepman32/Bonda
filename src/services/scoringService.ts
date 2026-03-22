@@ -15,8 +15,8 @@ export interface GestureCommit {
 
 export interface MatrixCommit {
   selections: Record<number, number>; // colIndex → rowIndex
-  columnCount: number; // always 4
-  rowCount: number; // always 6
+  columnCount: number; // always 5
+  rowCount: number; // always 9
 }
 
 function adjustBaseScore(value: number, delta: number): number {
@@ -96,6 +96,7 @@ export function deriveScoresFromMatrixSelection(
   const t1 = colT(1);
   const t2 = colT(2);
   const t3 = colT(3);
+  const t4 = colT(4);
 
   return {
     importance: Math.round(
@@ -112,7 +113,14 @@ export function deriveScoresFromMatrixSelection(
     ),
     stability: 0,
     complexity: 0,
-    supportiveness: 0,
+    supportiveness: clamp(
+      Math.round(
+        -50 +
+          (t4 ?? clamp((DEFAULT_SCORES.supportiveness + 50) / 100, 0, 1)) * 100,
+      ),
+      SCORE_LIMITS.modifierMin,
+      SCORE_LIMITS.modifierMax,
+    ),
     professionalValue: 0,
     emotionalWeight: 0,
   };
@@ -121,7 +129,7 @@ export function deriveScoresFromMatrixSelection(
 export function deriveMatrixConfidence(selection: MatrixCommit): number {
   const { selections, rowCount } = selection;
   const maxRow = rowCount - 1;
-  const cols = [0, 1, 2, 3];
+  const cols = [0, 1, 2, 3, 4];
   const distances = cols.map(col => {
     const rowIndex = selections[col] ?? Math.round(maxRow / 2);
     const t = 1 - rowIndex / maxRow;
@@ -146,12 +154,14 @@ export function deriveColumnSelectionsFromScores(
   const t1 = clamp((scores.comfort - 15) / 85, 0, 1);
   const t2 = clamp((scores.activity - 10) / 90, 0, 1);
   const t3 = clamp((scores.futureAttention - 10) / 90, 0, 1);
+  const t4 = clamp((scores.supportiveness + 50) / 100, 0, 1);
 
   return {
     0: Math.round((1 - t0) * maxRow),
     1: Math.round((1 - t1) * maxRow),
     2: Math.round((1 - t2) * maxRow),
     3: Math.round((1 - t3) * maxRow),
+    4: Math.round((1 - t4) * maxRow),
   };
 }
 
