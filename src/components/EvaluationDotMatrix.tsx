@@ -1,9 +1,15 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { runOnJS, useSharedValue } from 'react-native-reanimated';
+import { runOnJS } from 'react-native-reanimated';
 
 import { useAppTheme } from '@/theme';
+import {
+  buildDragColumnUpdates,
+  resolveMatrixCell,
+  type MatrixCell,
+  type MatrixColumnFrame,
+} from '@/components/evaluationDotMatrixHelpers';
 
 interface EvaluationDotMatrixProps {
   rowCount?: number;
@@ -27,136 +33,74 @@ function DotColumn({
   colIndex,
   rowCount,
   selectedRow,
-  onTap,
-  onPanUpdate,
-  onPanEnd,
   theme,
+  onLayout,
 }: {
   colIndex: number;
   rowCount: number;
   selectedRow: number | undefined;
-  onTap: (colIndex: number, rowIndex: number) => void;
-  onPanUpdate?: (colIndex: number, rowIndex: number) => void;
-  onPanEnd?: () => void;
   theme: ReturnType<typeof useAppTheme>;
+  onLayout?: (colIndex: number, x: number, width: number) => void;
 }) {
-  const columnHeight = useRef(0);
-  const lastEmittedRow = useSharedValue(-1);
   const rows = Array.from({ length: rowCount }, (_, i) => i);
 
-  const yToRow = useCallback(
-    (y: number): number => {
-      'worklet';
-      const h = columnHeight.current;
-      if (h <= 0) return 0;
-      const clamped = Math.max(0, Math.min(y, h));
-      // space-between: first dot center at rowHeight/2, last at h - rowHeight/2
-      const rowHeight = h / rowCount;
-      const row = Math.floor(clamped / rowHeight);
-      return Math.max(0, Math.min(row, rowCount - 1));
-    },
-    [rowCount],
-  );
-
-  const handlePanUpdate = useCallback(
-    (row: number) => {
-      onPanUpdate?.(colIndex, row);
-    },
-    [colIndex, onPanUpdate],
-  );
-
-  const handlePanEnd = useCallback(() => {
-    onPanEnd?.();
-  }, [onPanEnd]);
-
-  const handleTap = useCallback(
-    (row: number) => {
-      onTap(colIndex, row);
-    },
-    [colIndex, onTap],
-  );
-
-  const panGesture = Gesture.Pan()
-    .minDistance(5)
-    .onStart(e => {
-      const row = yToRow(e.y);
-      lastEmittedRow.value = row;
-      runOnJS(handlePanUpdate)(row);
-    })
-    .onUpdate(e => {
-      const row = yToRow(e.y);
-      if (row !== lastEmittedRow.value) {
-        lastEmittedRow.value = row;
-        runOnJS(handlePanUpdate)(row);
-      }
-    })
-    .onEnd(() => {
-      lastEmittedRow.value = -1;
-      runOnJS(handlePanEnd)();
-    });
-
-  const tapGesture = Gesture.Tap().onEnd(e => {
-    const row = yToRow(e.y);
-    runOnJS(handleTap)(row);
-  });
-
-  const composed = Gesture.Exclusive(panGesture, tapGesture);
-
   return (
-    <GestureDetector gesture={composed}>
-      <View
-        style={styles.column}
-        onLayout={e => {
-          columnHeight.current = e.nativeEvent.layout.height;
-        }}
-      >
-        {rows.map(rowIndex => {
-          const isSelected = selectedRow === rowIndex;
-          const isBelow = selectedRow !== undefined && rowIndex > selectedRow;
-          const isGreen = isSelected || isBelow;
-          const dotColor = isGreen ? GREEN : theme.accent;
-          const outerOpacity = isSelected
-            ? 0.35
-            : isBelow
-            ? 0.22
-            : selectedRow !== undefined
-            ? 0.08
-            : 0.15;
-          const innerOpacity = isSelected
-            ? 1
-            : isBelow
-            ? 0.7
-            : selectedRow !== undefined
-            ? 0.22
-            : 0.4;
+    <View
+      style={styles.column}
+      onLayout={e => {
+        onLayout?.(
+          colIndex,
+          e.nativeEvent.layout.x,
+          e.nativeEvent.layout.width,
+        );
+      }}
+    >
+      {rows.map(rowIndex => {
+        const isSelected = selectedRow === rowIndex;
+        const isBelow = selectedRow !== undefined && rowIndex > selectedRow;
+        const isGreen = isSelected || isBelow;
+        const dotColor = isGreen ? GREEN : theme.accent;
+        const outerOpacity = isSelected
+          ? 0.35
+          : isBelow
+          ? 0.22
+          : selectedRow !== undefined
+          ? 0.08
+          : 0.15;
+        const innerOpacity = isSelected
+          ? 1
+          : isBelow
+          ? 0.7
+          : selectedRow !== undefined
+          ? 0.22
+          : 0.4;
 
-          return (
-            <View key={`dot-${colIndex}-${rowIndex}`} style={styles.touch}>
+        return (
+          <View key={`dot-${colIndex}-${rowIndex}`} style={styles.touch}>
+            <View
+              style={[
+                styles.outerDot,
+                {
+                  backgroundColor: dotColor,
+                  opacity: outerOpacity,
+                  transform: [{ scale: isSelected ? 1.08 : 1 }],
+                },
+              ]}
+            >
               <View
                 style={[
-                  styles.outerDot,
+                  styles.innerDot,
                   {
                     backgroundColor: dotColor,
-                    opacity: outerOpacity,
-                    transform: [{ scale: isSelected ? 1.08 : 1 }],
+                    opacity: innerOpacity,
                   },
                 ]}
-              >
-                <View
-                  style={[
-                    styles.innerDot,
-                    {
-                      backgroundColor: dotColor,
-                      opacity: innerOpacity,
-                    },
-                  ]}
-                />
-              </View>
+              />
             </View>
-          );
-        })}
-      </View>
-    </GestureDetector>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -168,6 +112,96 @@ export function EvaluationDotMatrix({
   onColumnPanEnd,
 }: EvaluationDotMatrixProps) {
   const theme = useAppTheme();
+  const gridHeight = useRef(0);
+  const columnFrames = useRef<MatrixColumnFrame[]>([]);
+  const lastDragCell = useRef<MatrixCell | null>(null);
+  const latestSelections = useRef(selections);
+
+  useEffect(() => {
+    latestSelections.current = selections;
+  }, [selections]);
+
+  const handleColumnLayout = useCallback(
+    (colIndex: number, x: number, width: number) => {
+      columnFrames.current[colIndex] = { x, width };
+    },
+    [],
+  );
+
+  const emitDragAtPoint = useCallback(
+    (x: number, y: number) => {
+      const cell = resolveMatrixCell(
+        x,
+        y,
+        columnFrames.current,
+        gridHeight.current,
+        rowCount,
+      );
+      if (!cell) {
+        return;
+      }
+
+      const updates = buildDragColumnUpdates(
+        lastDragCell.current,
+        cell,
+        latestSelections.current,
+      );
+
+      updates.forEach(({ colIndex, rowIndex }) => {
+        latestSelections.current = {
+          ...latestSelections.current,
+          [colIndex]: rowIndex,
+        };
+        onColumnPanUpdate?.(colIndex, rowIndex);
+      });
+
+      lastDragCell.current = cell;
+    },
+    [onColumnPanUpdate, rowCount],
+  );
+
+  const handleTap = useCallback(
+    (x: number, y: number) => {
+      const cell = resolveMatrixCell(
+        x,
+        y,
+        columnFrames.current,
+        gridHeight.current,
+        rowCount,
+      );
+      if (!cell) {
+        return;
+      }
+
+      onColumnSelect(cell.colIndex, cell.rowIndex);
+    },
+    [onColumnSelect, rowCount],
+  );
+
+  const handlePanEnd = useCallback(() => {
+    if (lastDragCell.current !== null) {
+      lastDragCell.current = null;
+      onColumnPanEnd?.();
+    }
+  }, [onColumnPanEnd]);
+
+  const panGesture = Gesture.Pan()
+    .minDistance(5)
+    .onStart(e => {
+      runOnJS(emitDragAtPoint)(e.x, e.y);
+    })
+    .onUpdate(e => {
+      runOnJS(emitDragAtPoint)(e.x, e.y);
+    })
+    .onFinalize(() => {
+      runOnJS(handlePanEnd)();
+    });
+
+  const tapGesture = Gesture.Tap().onEnd(e => {
+    runOnJS(handleTap)(e.x, e.y);
+  });
+
+  const composed = Gesture.Exclusive(panGesture, tapGesture);
 
   return (
     <View
@@ -190,20 +224,25 @@ export function EvaluationDotMatrix({
           </Text>
         ))}
       </View>
-      <View style={styles.gridRow}>
-        {COLUMN_SPECS.map((_, colIndex) => (
-          <DotColumn
-            key={`col-${colIndex}`}
-            colIndex={colIndex}
-            rowCount={rowCount}
-            selectedRow={selections[colIndex]}
-            onTap={onColumnSelect}
-            onPanUpdate={onColumnPanUpdate}
-            onPanEnd={onColumnPanEnd}
-            theme={theme}
-          />
-        ))}
-      </View>
+      <GestureDetector gesture={composed}>
+        <View
+          style={styles.gridRow}
+          onLayout={e => {
+            gridHeight.current = e.nativeEvent.layout.height;
+          }}
+        >
+          {COLUMN_SPECS.map((_, colIndex) => (
+            <DotColumn
+              key={`col-${colIndex}`}
+              colIndex={colIndex}
+              rowCount={rowCount}
+              selectedRow={selections[colIndex]}
+              onLayout={handleColumnLayout}
+              theme={theme}
+            />
+          ))}
+        </View>
+      </GestureDetector>
     </View>
   );
 }
