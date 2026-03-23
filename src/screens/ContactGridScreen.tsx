@@ -1,5 +1,12 @@
-import React, { useDeferredValue, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
+  AppState,
   FlatList,
   Pressable,
   StyleSheet,
@@ -7,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
 
@@ -27,6 +35,9 @@ export function ContactGridScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const contacts = useAppStore(state => state.contacts);
   const evaluations = useAppStore(state => state.evaluations);
+  const refreshContactAvatars = useAppStore(
+    state => state.refreshContactAvatars,
+  );
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
 
@@ -62,11 +73,29 @@ export function ContactGridScreen({ navigation }: Props) {
     });
   }, [deferredQuery, sortedContacts]);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refreshContactAvatars().catch(() => undefined);
+    }, [refreshContactAvatars]),
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active') {
+        void refreshContactAvatars().catch(() => undefined);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [refreshContactAvatars]);
+
   const renderItem = ({ item }: { item: NormalizedContact }) => {
     const isEvaluated = evaluatedIds.has(item.id);
     return (
       <Pressable
-        style={[styles.cell, { opacity: isEvaluated ? 1 : 0.45 }]}
+        style={styles.cell}
         onPress={() =>
           navigation.navigate(ROUTES.ContactDetail, { contactId: item.id })
         }
@@ -81,7 +110,13 @@ export function ContactGridScreen({ navigation }: Props) {
             <View style={[styles.badge, { backgroundColor: '#059669' }]} />
           )}
         </View>
-        <Text numberOfLines={2} style={[styles.name, { color: theme.text }]}>
+        <Text
+          numberOfLines={2}
+          style={[
+            styles.name,
+            { color: isEvaluated ? theme.text : theme.textMuted },
+          ]}
+        >
           {item.displayName}
         </Text>
       </Pressable>

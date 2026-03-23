@@ -2,7 +2,10 @@ import { RESULTS } from 'react-native-permissions';
 import type { StateCreator } from 'zustand';
 
 import { DEFAULT_SETTINGS } from '@/constants/app';
-import { importAndNormalizeContacts } from '@/services/contactImportService';
+import {
+  importAndNormalizeContacts,
+  refreshContactAvatarUris,
+} from '@/services/contactImportService';
 import {
   getContactsPermissionStatus,
   isPermissionGranted,
@@ -25,6 +28,7 @@ export interface AppShellSlice {
   bootstrapApp: () => Promise<void>;
   requestPermission: () => Promise<void>;
   importContactsIntoState: (usePreview?: boolean) => Promise<void>;
+  refreshContactAvatars: () => Promise<void>;
   setSelectedMode: (mode: StoreSlices['selectedMode']) => void;
   setAnalysisMode: (mode: StoreSlices['analysisMode']) => void;
   setErrorMessage: (message?: string) => void;
@@ -35,7 +39,7 @@ export const createAppShellSlice: StateCreator<
   [],
   [],
   AppShellSlice
-> = set => ({
+> = (set, get) => ({
   bootState: 'idle',
   permissionState: 'idle',
   importProgress: {
@@ -175,6 +179,17 @@ export const createAppShellSlice: StateCreator<
       });
       throw error;
     }
+  },
+  refreshContactAvatars: async () => {
+    const { contacts } = get();
+    const nextContacts = await refreshContactAvatarUris(contacts);
+
+    if (nextContacts === contacts) {
+      return;
+    }
+
+    await getDataRepository().replaceContacts(nextContacts);
+    set({ contacts: nextContacts });
   },
   setSelectedMode: mode => set({ selectedMode: mode }),
   setAnalysisMode: mode => set({ analysisMode: mode }),

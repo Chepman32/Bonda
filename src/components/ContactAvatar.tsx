@@ -25,6 +25,14 @@ function paletteForSeed(seed: string) {
   return PORTRAIT_GRADIENTS[index % PORTRAIT_GRADIENTS.length];
 }
 
+function normalizeAvatarUri(uri: string): string {
+  if (/^(file|content|https?|ph|assets-library|data):\/\//.test(uri)) {
+    return uri;
+  }
+
+  return `file://${uri}`;
+}
+
 export function ContactAvatar({
   contact,
   size = 72,
@@ -39,12 +47,38 @@ export function ContactAvatar({
       ? Math.round(size * 0.4)
       : Math.round(size * 0.43);
   const gradientColors = paletteForSeed(contact.avatarSeed);
+  const avatarUri = contact.avatarUri
+    ? normalizeAvatarUri(contact.avatarUri)
+    : undefined;
 
-  if (contact.avatarUri) {
+  if (avatarUri && variant === 'portraitCard') {
+    return (
+      <View
+        style={[
+          styles.imageFrame,
+          {
+            width,
+            height,
+            borderRadius,
+            borderColor: theme.border,
+          },
+        ]}
+      >
+        <Image
+          accessibilityIgnoresInvertColors
+          source={{ uri: avatarUri }}
+          style={[styles.mediaFill, { borderRadius }]}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  }
+
+  if (avatarUri) {
     return (
       <Image
         accessibilityIgnoresInvertColors
-        source={{ uri: contact.avatarUri }}
+        source={{ uri: avatarUri }}
         style={[
           styles.image,
           {
@@ -103,6 +137,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
   },
+  imageFrame: {
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   fallback: {
     borderRadius: 999,
     borderWidth: 1,
@@ -131,5 +169,8 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 28,
     backgroundColor: 'rgba(15, 23, 42, 0.28)',
+  },
+  mediaFill: {
+    flex: 1,
   },
 });

@@ -274,3 +274,44 @@ export async function importAndNormalizeContacts(options: {
     progress,
   };
 }
+
+export async function refreshContactAvatarUris(
+  contacts: NormalizedContact[],
+): Promise<NormalizedContact[]> {
+  const deviceContacts = contacts.filter(
+    contact => contact.source === 'device',
+  );
+  if (deviceContacts.length === 0) {
+    return contacts;
+  }
+
+  const latestContacts = await Contacts.getAll();
+  const avatarByExternalId = new Map(
+    latestContacts.map(contact => [
+      contact.recordID,
+      contact.thumbnailPath || undefined,
+    ]),
+  );
+  const now = new Date().toISOString();
+  let didChange = false;
+
+  const nextContacts = contacts.map(contact => {
+    if (contact.source !== 'device') {
+      return contact;
+    }
+
+    const nextAvatarUri = avatarByExternalId.get(contact.externalId);
+    if (contact.avatarUri === nextAvatarUri) {
+      return contact;
+    }
+
+    didChange = true;
+    return {
+      ...contact,
+      avatarUri: nextAvatarUri,
+      updatedAt: now,
+    };
+  });
+
+  return didChange ? nextContacts : contacts;
+}
