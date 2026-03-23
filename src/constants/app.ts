@@ -58,11 +58,6 @@ export const EVALUATION_MODES: Array<{
     bodyKey: 'mode.deep.body',
   },
   {
-    id: 'group',
-    titleKey: 'mode.group.title',
-    bodyKey: 'mode.group.body',
-  },
-  {
     id: 'resume',
     titleKey: 'mode.resume.title',
     bodyKey: 'mode.resume.body',

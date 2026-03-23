@@ -10,7 +10,7 @@ export function AtmosphereBackdrop() {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <LinearGradient
-        colors={theme.gradients.cosmic}
+        colors={theme.backdrop}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}

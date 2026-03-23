@@ -1,17 +1,50 @@
 import React from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
+import type { ThemeMode } from '@/models/entities';
 import type { RootStackParamList } from '@/navigation/types';
+import { themes, useAppTheme } from '@/theme';
 import { useAppStore } from '@/store/useAppStore';
-import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
+
+const THEME_OPTIONS: Array<{
+  mode: ThemeMode;
+  label: string;
+  swatch: string;
+  textColor: string;
+}> = [
+  { mode: 'system', label: 'Auto', swatch: '#3A4060', textColor: '#F5F7FF' },
+  {
+    mode: 'light',
+    label: 'Light',
+    swatch: themes.light.background,
+    textColor: themes.light.text,
+  },
+  {
+    mode: 'dark',
+    label: 'Dark',
+    swatch: themes.dark.background,
+    textColor: themes.dark.text,
+  },
+  {
+    mode: 'solar',
+    label: 'Solar',
+    swatch: themes.solar.background,
+    textColor: themes.solar.text,
+  },
+  {
+    mode: 'mono',
+    label: 'Mono',
+    swatch: themes.mono.background,
+    textColor: themes.mono.text,
+  },
+];
 
 export function SettingsScreen({ navigation }: Props) {
   const theme = useAppTheme();
@@ -28,10 +61,48 @@ export function SettingsScreen({ navigation }: Props) {
 
   return (
     <Screen scroll>
-      <DismissButton onPress={() => navigation.goBack()} />
       <Text style={[styles.title, { color: theme.text }]}>
         Settings and privacy
       </Text>
+
+      <GlassCard style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Appearance
+        </Text>
+        <View style={styles.themeGrid}>
+          {THEME_OPTIONS.map(option => {
+            const isSelected = settings.themeMode === option.mode;
+            return (
+              <Pressable
+                key={option.mode}
+                accessibilityRole="button"
+                accessibilityLabel={`${option.label} theme`}
+                onPress={() => void updateSettings({ themeMode: option.mode })}
+                style={[
+                  styles.themeSwatch,
+                  { backgroundColor: option.swatch },
+                  isSelected
+                    ? { borderColor: theme.accent, borderWidth: 2.5 }
+                    : { borderColor: theme.border, borderWidth: 1 },
+                ]}
+              >
+                <Text style={[styles.themeLabel, { color: option.textColor }]}>
+                  {option.label}
+                </Text>
+                {isSelected && (
+                  <View
+                    style={[
+                      styles.themeCheck,
+                      { backgroundColor: theme.accent },
+                    ]}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </GlassCard>
+
       <GlassCard style={styles.card}>
         <ToggleRow
           label="Reduce motion"
@@ -53,6 +124,7 @@ export function SettingsScreen({ navigation }: Props) {
           }
         />
       </GlassCard>
+
       <GlassCard style={styles.card}>
         <Text style={[styles.sectionTitle, { color: theme.text }]}>
           Local diagnostics
@@ -65,6 +137,7 @@ export function SettingsScreen({ navigation }: Props) {
           onPress={() => void shareDiagnostics()}
         />
       </GlassCard>
+
       <View style={styles.actions}>
         <PrimaryButton
           label="Privacy details"
@@ -107,6 +180,38 @@ const styles = StyleSheet.create({
   card: {
     gap: 16,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  sectionBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  themeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  themeSwatch: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  themeCheck: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -116,14 +221,6 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  sectionBody: {
-    fontSize: 14,
-    lineHeight: 20,
   },
   actions: {
     gap: 12,

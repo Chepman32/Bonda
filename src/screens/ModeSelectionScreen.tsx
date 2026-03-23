@@ -1,109 +1,299 @@
-import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import {
+  Animated,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
+import { useTranslation } from 'react-i18next';
+import { Settings } from 'lucide-react-native';
 
-import { GlassCard } from '@/components/GlassCard';
-import { PrimaryButton } from '@/components/PrimaryButton';
-import { Screen } from '@/components/Screen';
-import { EVALUATION_MODES } from '@/constants/app';
+import type { EvaluationMode } from '@/models/entities';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
-import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ModeSelection'>;
+
+const SHEET_MODES: Array<{
+  id: EvaluationMode;
+  titleKey: string;
+  bodyKey: string;
+}> = [
+  { id: 'quick', titleKey: 'mode.quick.title', bodyKey: 'mode.quick.body' },
+  { id: 'deep', titleKey: 'mode.deep.title', bodyKey: 'mode.deep.body' },
+];
 
 export function ModeSelectionScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const theme = useAppTheme();
-  const selectedMode = useAppStore(state => state.selectedMode);
+  const { width } = useWindowDimensions();
   const setSelectedMode = useAppStore(state => state.setSelectedMode);
   const startSession = useAppStore(state => state.startSession);
   const session = useAppStore(state => state.session);
   const hasUnfinishedSession =
     session?.status === 'active' || session?.status === 'paused';
-  const availableModes = useMemo(
-    () =>
-      hasUnfinishedSession
-        ? EVALUATION_MODES
-        : EVALUATION_MODES.filter(mode => mode.id !== 'resume'),
-    [hasUnfinishedSession],
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  const circleSize = width * 0.82;
+
+  const openModal = useCallback(() => {
+    setModalVisible(true);
+    scaleAnim.setValue(0.85);
+    opacityAnim.setValue(0);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 260,
+        mass: 0.7,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacityAnim, scaleAnim]);
+
+  const closeModal = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setModalVisible(false));
+  }, [opacityAnim, scaleAnim]);
+
+  const pickMode = useCallback(
+    async (mode: EvaluationMode) => {
+      setSelectedMode(mode);
+      closeModal();
+      await new Promise(r => setTimeout(r, 160));
+      await startSession();
+      navigation.navigate(ROUTES.EvaluationDeck);
+    },
+    [closeModal, navigation, setSelectedMode, startSession],
   );
 
-  useEffect(() => {
-    if (!hasUnfinishedSession && selectedMode === 'resume') {
-      setSelectedMode('quick');
-    }
-  }, [hasUnfinishedSession, selectedMode, setSelectedMode]);
-
-  async function continueToDeck() {
-    if (selectedMode === 'resume') {
-      if (hasUnfinishedSession) {
-        navigation.navigate(ROUTES.EvaluationDeck);
-        return;
-      }
-
-      setSelectedMode('quick');
-    }
-
-    await startSession();
+  const resumeSession = useCallback(() => {
     navigation.navigate(ROUTES.EvaluationDeck);
-  }
+  }, [navigation]);
 
   return (
-    <Screen scroll>
-      <View style={styles.grid}>
-        {availableModes.map(mode => {
-          const selected = selectedMode === mode.id;
+    <View style={styles.root}>
+      <SafeAreaView style={styles.topBar} edges={['top']}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          onPress={() => navigation.navigate(ROUTES.Settings)}
+          style={styles.settingsButton}
+        >
+          <Settings color={theme.textMuted} size={22} strokeWidth={2} />
+        </Pressable>
+      </SafeAreaView>
 
-          return (
-            <GlassCard
-              key={mode.id}
-              style={[
-                styles.card,
-                {
-                  borderColor: selected ? theme.accent : theme.border,
-                },
-              ]}
-            >
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
-                {t(mode.titleKey)}
-              </Text>
-              <Text style={[styles.cardBody, { color: theme.textMuted }]}>
-                {t(mode.bodyKey)}
-              </Text>
-              <PrimaryButton
-                label={selected ? 'Selected' : 'Select'}
-                onPress={() => setSelectedMode(mode.id)}
-                variant={selected ? 'primary' : 'secondary'}
-              />
-            </GlassCard>
-          );
-        })}
+      <View style={styles.center}>
+        {hasUnfinishedSession && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={resumeSession}
+            style={styles.resumeButton}
+          >
+            <Text style={[styles.resumeLabel, { color: theme.textMuted }]}>
+              {t('mode.resume.title')}
+            </Text>
+          </Pressable>
+        )}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start evaluation"
+          onPress={openModal}
+          style={({ pressed }) => [
+            styles.circleButton,
+            {
+              width: circleSize,
+              height: circleSize,
+              borderRadius: circleSize / 2,
+            },
+            pressed && styles.circlePressed,
+          ]}
+        >
+          <LinearGradient
+            colors={theme.gradients.halo}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.circleGradient, { borderRadius: circleSize / 2 }]}
+          >
+            <Text style={styles.circleLabel}>Start{'\n'}evaluation</Text>
+          </LinearGradient>
+        </Pressable>
       </View>
 
-      <PrimaryButton
-        label={t('common.continue')}
-        onPress={() => void continueToDeck()}
-      />
-    </Screen>
+      <Modal
+        animationType="none"
+        transparent
+        visible={modalVisible}
+        onRequestClose={closeModal}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.modalBackdrop} onPress={closeModal}>
+          <Animated.View
+            style={[
+              styles.dialog,
+              { backgroundColor: theme.backgroundSecondary },
+              { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+            ]}
+          >
+            <Pressable onPress={() => {}}>
+              <Text style={[styles.dialogTitle, { color: theme.text }]}>
+                Choose mode
+              </Text>
+
+              <View style={styles.modeList}>
+                {SHEET_MODES.map(mode => (
+                  <Pressable
+                    key={mode.id}
+                    onPress={() => void pickMode(mode.id)}
+                    style={({ pressed }) => [
+                      styles.modeCard,
+                      {
+                        backgroundColor: theme.panel,
+                        borderColor: theme.border,
+                        opacity: pressed ? 0.72 : 1,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.modeTitle, { color: theme.text }]}>
+                      {t(mode.titleKey)}
+                    </Text>
+                    <Text style={[styles.modeBody, { color: theme.textMuted }]}>
+                      {t(mode.bodyKey)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Pressable onPress={closeModal} style={styles.cancelRow}>
+                <Text style={[styles.cancelLabel, { color: theme.textMuted }]}>
+                  {t('common.cancel')}
+                </Text>
+              </Pressable>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    gap: 14,
+  root: {
+    flex: 1,
   },
-  card: {
-    gap: 14,
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 10,
   },
-  cardTitle: {
+  settingsButton: {
+    padding: 16,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 28,
+  },
+  resumeButton: {
+    position: 'absolute',
+    bottom: -60,
+  },
+  resumeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  circleButton: {
+    overflow: 'hidden',
+  },
+  circleGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleLabel: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    lineHeight: 36,
+  },
+  circlePressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.97 }],
+  },
+  // modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  dialog: {
+    width: '100%',
+    borderRadius: 28,
+    padding: 24,
+  },
+  dialogTitle: {
     fontSize: 22,
     fontWeight: '700',
+    letterSpacing: -0.3,
+    marginBottom: 18,
   },
-  cardBody: {
+  modeList: {
+    gap: 12,
+  },
+  modeCard: {
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 20,
+    gap: 6,
+  },
+  modeTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modeBody: {
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 20,
+  },
+  cancelRow: {
+    alignItems: 'center',
+    paddingTop: 20,
+  },
+  cancelLabel: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
