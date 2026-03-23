@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { GlassCard } from '@/components/GlassCard';
@@ -94,18 +95,71 @@ export function SettingsScreen({ navigation }: Props) {
                     : { borderColor: theme.border, borderWidth: 1 },
                 ]}
               >
-                {option.mode === 'system' && (
-                  <LinearGradient
-                    colors={['#FFFFFF', '#FFFFFF', '#111111', '#111111']}
-                    locations={[0, 0.5, 0.5, 1]}
-                    start={{ x: 0.305, y: 0 }}
-                    end={{ x: 0.695, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
+                {option.mode === 'system' ? (
+                  <>
+                    <LinearGradient
+                      colors={['#FFFFFF', '#FFFFFF', '#111111', '#111111']}
+                      locations={[0, 0.5, 0.5, 1]}
+                      start={{ x: 0.305, y: 0 }}
+                      end={{ x: 0.695, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Black text on white half */}
+                    <MaskedView
+                      style={StyleSheet.absoluteFill}
+                      maskElement={
+                        <LinearGradient
+                          colors={[
+                            'black',
+                            'black',
+                            'transparent',
+                            'transparent',
+                          ]}
+                          locations={[0, 0.5, 0.5, 1]}
+                          start={{ x: 0.305, y: 0 }}
+                          end={{ x: 0.695, y: 1 }}
+                          style={{ flex: 1 }}
+                        />
+                      }
+                    >
+                      <View style={styles.labelMask}>
+                        <Text style={[styles.themeLabel, { color: '#111111' }]}>
+                          {option.label}
+                        </Text>
+                      </View>
+                    </MaskedView>
+                    {/* White text on black half */}
+                    <MaskedView
+                      style={StyleSheet.absoluteFill}
+                      maskElement={
+                        <LinearGradient
+                          colors={[
+                            'transparent',
+                            'transparent',
+                            'black',
+                            'black',
+                          ]}
+                          locations={[0, 0.5, 0.5, 1]}
+                          start={{ x: 0.305, y: 0 }}
+                          end={{ x: 0.695, y: 1 }}
+                          style={{ flex: 1 }}
+                        />
+                      }
+                    >
+                      <View style={styles.labelMask}>
+                        <Text style={[styles.themeLabel, { color: '#FFFFFF' }]}>
+                          {option.label}
+                        </Text>
+                      </View>
+                    </MaskedView>
+                  </>
+                ) : (
+                  <Text
+                    style={[styles.themeLabel, { color: option.textColor }]}
+                  >
+                    {option.label}
+                  </Text>
                 )}
-                <Text style={[styles.themeLabel, { color: option.textColor }]}>
-                  {option.label}
-                </Text>
                 {isSelected && (
                   <View
                     style={[
@@ -218,6 +272,11 @@ const styles = StyleSheet.create({
     padding: 14,
     justifyContent: 'flex-end',
     overflow: 'hidden',
+  },
+  labelMask: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 14,
   },
   themeLabel: {
     fontSize: 16,
