@@ -1,12 +1,5 @@
-import React, {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useDeferredValue, useMemo, useState } from 'react';
 import {
-  AppState,
   FlatList,
   Pressable,
   StyleSheet,
@@ -14,11 +7,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Search } from 'lucide-react-native';
 
 import { ContactAvatar } from '@/components/ContactAvatar';
+import { useHotReloadContactAvatars } from '@/hooks/useHotReloadContactAvatars';
 import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
@@ -35,11 +28,10 @@ export function ContactGridScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const contacts = useAppStore(state => state.contacts);
   const evaluations = useAppStore(state => state.evaluations);
-  const refreshContactAvatars = useAppStore(
-    state => state.refreshContactAvatars,
-  );
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
+
+  useHotReloadContactAvatars();
 
   const evaluatedIds = useMemo(
     () => new Set(Object.values(evaluations).map(e => e.contactId)),
@@ -72,24 +64,6 @@ export function ContactGridScreen({ navigation }: Props) {
       );
     });
   }, [deferredQuery, sortedContacts]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void refreshContactAvatars().catch(() => undefined);
-    }, [refreshContactAvatars]),
-  );
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextState => {
-      if (nextState === 'active') {
-        void refreshContactAvatars().catch(() => undefined);
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [refreshContactAvatars]);
 
   const renderItem = ({ item }: { item: NormalizedContact }) => {
     const isEvaluated = evaluatedIds.has(item.id);

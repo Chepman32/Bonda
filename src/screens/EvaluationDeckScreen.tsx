@@ -6,6 +6,7 @@ import { ContactAvatar } from '@/components/ContactAvatar';
 import { EvaluationDotMatrix } from '@/components/EvaluationDotMatrix';
 import { FloatingDock } from '@/components/FloatingDock';
 import { GlassCard } from '@/components/GlassCard';
+import { useHotReloadContactAvatars } from '@/hooks/useHotReloadContactAvatars';
 import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
@@ -35,6 +36,8 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   const [isMatrixAdvancing, setIsMatrixAdvancing] = useState(false);
   const [advanceAnimationToken, setAdvanceAnimationToken] = useState(0);
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useHotReloadContactAvatars();
 
   const currentContact = contacts.find(
     contact => contact.id === selectedContactId,
