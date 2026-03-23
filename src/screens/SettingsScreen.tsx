@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { GlassCard } from '@/components/GlassCard';
@@ -19,7 +20,12 @@ const THEME_OPTIONS: Array<{
   swatch: string;
   textColor: string;
 }> = [
-  { mode: 'system', label: 'Auto', swatch: '#3A4060', textColor: '#F5F7FF' },
+  {
+    mode: 'system',
+    label: 'Auto',
+    swatch: 'transparent',
+    textColor: '#FFFFFF',
+  },
   {
     mode: 'light',
     label: 'Light',
@@ -80,12 +86,23 @@ export function SettingsScreen({ navigation }: Props) {
                 onPress={() => void updateSettings({ themeMode: option.mode })}
                 style={[
                   styles.themeSwatch,
-                  { backgroundColor: option.swatch },
+                  option.mode !== 'system' && {
+                    backgroundColor: option.swatch,
+                  },
                   isSelected
                     ? { borderColor: theme.accent, borderWidth: 2.5 }
                     : { borderColor: theme.border, borderWidth: 1 },
                 ]}
               >
+                {option.mode === 'system' && (
+                  <LinearGradient
+                    colors={['#FFFFFF', '#FFFFFF', '#111111', '#111111']}
+                    locations={[0, 0.5, 0.5, 1]}
+                    start={{ x: 0.305, y: 0 }}
+                    end={{ x: 0.695, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <Text style={[styles.themeLabel, { color: option.textColor }]}>
                   {option.label}
                 </Text>
@@ -191,26 +208,28 @@ const styles = StyleSheet.create({
   themeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   themeSwatch: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexBasis: '47%',
+    flexGrow: 1,
+    aspectRatio: 1.6,
+    borderRadius: 20,
+    padding: 14,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
   themeLabel: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '700',
   },
   themeCheck: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 12,
+    right: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   toggleRow: {
     flexDirection: 'row',
