@@ -77,17 +77,12 @@ export function SummaryScreen({ navigation }: Props) {
       />
       <View style={styles.actions}>
         <PrimaryButton
-          label="History"
-          onPress={() => navigation.navigate(ROUTES.SessionHistory)}
-          variant="secondary"
-        />
-        <PrimaryButton
           label="Export"
           onPress={() => navigation.navigate(ROUTES.ExportSnapshot)}
         />
         <PrimaryButton
-          label="Settings"
-          onPress={() => navigation.navigate(ROUTES.Settings)}
+          label="Go Home"
+          onPress={() => navigation.navigate(ROUTES.ModeSelection)}
           variant="secondary"
         />
       </View>

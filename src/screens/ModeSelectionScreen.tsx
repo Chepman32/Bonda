@@ -1,7 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
   Animated,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -122,6 +121,16 @@ export function ModeSelectionScreen({ navigation }: Props) {
             </Text>
           </Pressable>
         )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Evaluations History"
+          onPress={() => navigation.navigate(ROUTES.SessionHistory)}
+          style={styles.historyButton}
+        >
+          <Text style={[styles.historyLabel, { color: theme.textMuted }]}>
+            Evaluations History
+          </Text>
+        </Pressable>
 
         <Pressable
           accessibilityRole="button"
@@ -148,59 +157,54 @@ export function ModeSelectionScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      <Modal
-        animationType="none"
-        transparent
-        visible={modalVisible}
-        onRequestClose={closeModal}
-        statusBarTranslucent
+      {/* Always mounted — no Modal flash */}
+      <Animated.View
+        pointerEvents={modalVisible ? 'auto' : 'none'}
+        style={[styles.modalBackdrop, { opacity: opacityAnim }]}
       >
-        <Pressable style={styles.modalBackdrop} onPress={closeModal}>
-          <Animated.View
-            style={[
-              styles.dialog,
-              { backgroundColor: theme.backgroundSecondary },
-              { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
-            ]}
-          >
-            <Pressable onPress={() => {}}>
-              <Text style={[styles.dialogTitle, { color: theme.text }]}>
-                Choose mode
-              </Text>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={closeModal} />
+        <Animated.View
+          style={[
+            styles.dialog,
+            { backgroundColor: theme.backgroundSecondary },
+            { transform: [{ scale: scaleAnim }] },
+          ]}
+        >
+          <Text style={[styles.dialogTitle, { color: theme.text }]}>
+            Choose mode
+          </Text>
 
-              <View style={styles.modeList}>
-                {SHEET_MODES.map(mode => (
-                  <Pressable
-                    key={mode.id}
-                    onPress={() => void pickMode(mode.id)}
-                    style={({ pressed }) => [
-                      styles.modeCard,
-                      {
-                        backgroundColor: theme.panel,
-                        borderColor: theme.border,
-                        opacity: pressed ? 0.72 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.modeTitle, { color: theme.text }]}>
-                      {t(mode.titleKey)}
-                    </Text>
-                    <Text style={[styles.modeBody, { color: theme.textMuted }]}>
-                      {t(mode.bodyKey)}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <Pressable onPress={closeModal} style={styles.cancelRow}>
-                <Text style={[styles.cancelLabel, { color: theme.textMuted }]}>
-                  {t('common.cancel')}
+          <View style={styles.modeList}>
+            {SHEET_MODES.map(mode => (
+              <Pressable
+                key={mode.id}
+                onPress={() => void pickMode(mode.id)}
+                style={({ pressed }) => [
+                  styles.modeCard,
+                  {
+                    backgroundColor: theme.panel,
+                    borderColor: theme.border,
+                    opacity: pressed ? 0.72 : 1,
+                  },
+                ]}
+              >
+                <Text style={[styles.modeTitle, { color: theme.text }]}>
+                  {t(mode.titleKey)}
+                </Text>
+                <Text style={[styles.modeBody, { color: theme.textMuted }]}>
+                  {t(mode.bodyKey)}
                 </Text>
               </Pressable>
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Modal>
+            ))}
+          </View>
+
+          <Pressable onPress={closeModal} style={styles.cancelRow}>
+            <Text style={[styles.cancelLabel, { color: theme.textMuted }]}>
+              {t('common.cancel')}
+            </Text>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 }
@@ -232,6 +236,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  historyButton: {
+    position: 'absolute',
+    bottom: 32,
+  },
+  historyLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   circleButton: {
     overflow: 'hidden',
   },
@@ -254,11 +266,12 @@ const styles = StyleSheet.create({
   },
   // modal
   modalBackdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    zIndex: 20,
   },
   dialog: {
     width: '100%',
