@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { ContactAvatar } from '@/components/ContactAvatar';
@@ -150,6 +151,15 @@ export function EvaluationDeckScreen({ navigation }: Props) {
 
   return (
     <Screen contentStyle={styles.deckScreen}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+      >
+        <ChevronLeft color={theme.accent} size={28} strokeWidth={2.5} />
+        <Text style={[styles.backLabel, { color: theme.accent }]}>Back</Text>
+      </Pressable>
       <GlassCard style={styles.activeCard}>
         <View style={styles.cardHeader}>
           <ContactAvatar contact={currentContact} size={44} />
@@ -216,6 +226,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     paddingBottom: 12,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -6,
+  },
+  backLabel: {
+    fontSize: 17,
+    fontWeight: '400',
   },
   activeCard: {
     flex: 1,
