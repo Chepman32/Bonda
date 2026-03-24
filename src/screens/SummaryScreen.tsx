@@ -82,7 +82,9 @@ export function SummaryScreen({ navigation }: Props) {
         />
         <PrimaryButton
           label="Go Home"
-          onPress={() => navigation.navigate(ROUTES.ModeSelection)}
+          onPress={() =>
+            navigation.navigate(ROUTES.Main, { screen: ROUTES.ModeSelection })
+          }
           variant="secondary"
         />
       </View>

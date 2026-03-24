@@ -7,19 +7,17 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 import LinearGradient from 'react-native-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { Settings } from 'lucide-react-native';
 
 import type { EvaluationMode } from '@/models/entities';
 import { ROUTES } from '@/navigation/routes';
-import type { RootStackParamList } from '@/navigation/types';
+import type { TabScreenProps } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'ModeSelection'>;
+type Props = TabScreenProps<'ModeSelection'>;
 
 const SHEET_MODES: Array<{
   id: EvaluationMode;
@@ -98,17 +96,6 @@ export function ModeSelectionScreen({ navigation }: Props) {
 
   return (
     <View style={styles.root}>
-      <SafeAreaView style={styles.topBar} edges={['top']}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Settings"
-          onPress={() => navigation.navigate(ROUTES.Settings)}
-          style={styles.settingsButton}
-        >
-          <Settings color={theme.textMuted} size={22} strokeWidth={2} />
-        </Pressable>
-      </SafeAreaView>
-
       <View style={styles.center}>
         {hasUnfinishedSession && (
           <Pressable
@@ -121,17 +108,6 @@ export function ModeSelectionScreen({ navigation }: Props) {
             </Text>
           </Pressable>
         )}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Evaluations History"
-          onPress={() => navigation.navigate(ROUTES.SessionHistory)}
-          style={styles.historyButton}
-        >
-          <Text style={[styles.historyLabel, { color: theme.textMuted }]}>
-            Evaluations History
-          </Text>
-        </Pressable>
-
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Start evaluation"
@@ -213,15 +189,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    zIndex: 10,
-  },
-  settingsButton: {
-    padding: 16,
-  },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -233,14 +200,6 @@ const styles = StyleSheet.create({
     bottom: -60,
   },
   resumeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  historyButton: {
-    position: 'absolute',
-    bottom: 32,
-  },
-  historyLabel: {
     fontSize: 14,
     fontWeight: '600',
   },

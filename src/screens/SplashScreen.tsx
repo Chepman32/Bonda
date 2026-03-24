@@ -51,9 +51,11 @@ export function SplashScreen({ navigation }: Props) {
     }
 
     const timeout = setTimeout(() => {
-      navigation.replace(
-        contacts.length > 0 ? ROUTES.ModeSelection : ROUTES.PermissionIntro,
-      );
+      if (contacts.length > 0) {
+        navigation.replace(ROUTES.Main, { screen: ROUTES.ModeSelection });
+      } else {
+        navigation.replace(ROUTES.PermissionIntro);
+      }
     }, 1800);
 
     return () => clearTimeout(timeout);

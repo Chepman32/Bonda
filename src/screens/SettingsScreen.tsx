@@ -2,18 +2,16 @@ import React from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-
 import { GlassCard } from '@/components/GlassCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { ThemeMode } from '@/models/entities';
-import type { RootStackParamList } from '@/navigation/types';
+import type { TabScreenProps } from '@/navigation/types';
 import { themes, useAppTheme } from '@/theme';
 import { useAppStore } from '@/store/useAppStore';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
+type Props = TabScreenProps<'Settings'>;
 
 const THEME_OPTIONS: Array<{
   mode: ThemeMode;

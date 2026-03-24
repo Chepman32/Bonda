@@ -38,7 +38,7 @@ export function ImportNormalizeScreen({ navigation, route }: Props) {
     }
 
     const timeout = setTimeout(() => {
-      navigation.replace(ROUTES.ModeSelection);
+      navigation.replace(ROUTES.Main, { screen: ROUTES.ModeSelection });
     }, 900);
 
     return () => clearTimeout(timeout);

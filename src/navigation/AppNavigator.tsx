@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { enableFreeze } from 'react-native-screens';
+import { Home, History, Settings as SettingsIcon } from 'lucide-react-native';
 
 import { ROUTES } from '@/navigation/routes';
-import type { RootStackParamList } from '@/navigation/types';
+import type { MainTabParamList, RootStackParamList } from '@/navigation/types';
 import { ContactDetailScreen } from '@/screens/ContactDetailScreen';
 import { ContactGridScreen } from '@/screens/ContactGridScreen';
 import { ContactsPermissionScreen } from '@/screens/ContactsPermissionScreen';
@@ -22,10 +24,12 @@ import { SettingsScreen } from '@/screens/SettingsScreen';
 import { SplashScreen } from '@/screens/SplashScreen';
 import { SummaryScreen } from '@/screens/SummaryScreen';
 import { useAppStore } from '@/store/useAppStore';
+import { useAppTheme } from '@/theme';
 
 enableFreeze(true);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const dismissableScreenOptions = {
   animation: 'slide_from_bottom' as const,
@@ -33,6 +37,52 @@ const dismissableScreenOptions = {
   gestureEnabled: true,
   presentation: 'modal' as const,
 };
+
+function MainTabNavigator() {
+  const theme = useAppTheme();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: theme.background,
+          borderTopColor: theme.border,
+        },
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.textMuted,
+      }}
+    >
+      <Tab.Screen
+        name={ROUTES.ModeSelection}
+        component={ModeSelectionScreen}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name={ROUTES.SessionHistory}
+        component={SessionHistoryScreen}
+        options={{
+          tabBarLabel: 'History',
+          tabBarIcon: ({ color, size }) => (
+            <History color={color} size={size} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name={ROUTES.Settings}
+        component={SettingsScreen}
+        options={{
+          tabBarLabel: 'Settings',
+          tabBarIcon: ({ color, size }) => (
+            <SettingsIcon color={color} size={size} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
 
 export function AppNavigator() {
   const bootstrapApp = useAppStore(state => state.bootstrapApp);
@@ -64,8 +114,9 @@ export function AppNavigator() {
           name={ROUTES.ImportNormalize}
         />
         <Stack.Screen
-          component={ModeSelectionScreen}
-          name={ROUTES.ModeSelection}
+          component={MainTabNavigator}
+          name={ROUTES.Main}
+          options={{ animation: 'fade' }}
         />
         <Stack.Screen
           component={EvaluationDeckScreen}
@@ -85,16 +136,6 @@ export function AppNavigator() {
         <Stack.Screen
           component={PersonInsightScreen}
           name={ROUTES.PersonInsight}
-          options={dismissableScreenOptions}
-        />
-        <Stack.Screen
-          component={SessionHistoryScreen}
-          name={ROUTES.SessionHistory}
-          options={dismissableScreenOptions}
-        />
-        <Stack.Screen
-          component={SettingsScreen}
-          name={ROUTES.Settings}
           options={dismissableScreenOptions}
         />
         <Stack.Screen

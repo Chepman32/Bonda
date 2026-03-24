@@ -1,16 +1,14 @@
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-
 import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
-import type { RootStackParamList } from '@/navigation/types';
+import type { TabScreenProps } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { formatSessionDate } from '@/utils/formatting';
 import { useAppTheme } from '@/theme';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SessionHistory'>;
+type Props = TabScreenProps<'SessionHistory'>;
 
 export function SessionHistoryScreen({ navigation }: Props) {
   const theme = useAppTheme();

@@ -11,6 +11,7 @@ export const ROUTES = {
   ContactsPermission: 'ContactsPermission',
   ImportNormalize: 'ImportNormalize',
   ModeSelection: 'ModeSelection',
+  Main: 'Main',
   EvaluationDeck: 'EvaluationDeck',
   ReviewQueue: 'ReviewQueue',
   ClusterEditor: 'ClusterEditor',
