@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AtmosphereBackdrop } from '@/components/AtmosphereBackdrop';
 import { GlassCard } from '@/components/GlassCard';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 interface AppErrorBoundaryState {
@@ -74,6 +75,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   body: {
     fontSize: 15,
@@ -85,5 +87,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
 });

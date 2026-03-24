@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 interface PrimaryButtonProps {
@@ -78,6 +79,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   primaryLabel: {
     color: '#FFFFFF',

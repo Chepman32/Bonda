@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { buildBubbleNodes } from '@/services/insightService';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ClusterEditor'>;
@@ -99,14 +100,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   label: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   selectedName: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   clusterList: {
     gap: 12,
@@ -130,6 +134,7 @@ const styles = StyleSheet.create({
   clusterName: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   clusterMeta: {
     fontSize: 13,
@@ -137,6 +142,7 @@ const styles = StyleSheet.create({
   assignButton: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   returnLink: {
     fontSize: 14,

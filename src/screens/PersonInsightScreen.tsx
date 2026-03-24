@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { getContactPlacementDescription } from '@/services/insightService';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PersonInsight'>;
@@ -97,6 +98,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   header: {
     alignItems: 'center',
@@ -105,6 +107,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   body: {
     textAlign: 'center',
@@ -124,10 +127,12 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   metricValue: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   track: {
     height: 10,

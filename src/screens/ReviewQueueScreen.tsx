@@ -9,6 +9,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReviewQueue'>;
@@ -105,6 +106,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   queueCard: {
     width: 140,
@@ -114,6 +116,7 @@ const styles = StyleSheet.create({
   queueName: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   activeCard: {
     gap: 18,
@@ -130,6 +133,7 @@ const styles = StyleSheet.create({
   activeName: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   activeMeta: {
     fontSize: 14,

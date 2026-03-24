@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import type { NormalizedContact } from '@/models/entities';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 interface ContactAvatarProps {
@@ -150,6 +151,7 @@ const styles = StyleSheet.create({
   },
   initials: {
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -1,
   },
   portraitGlow: {

@@ -10,6 +10,7 @@ import { openDeviceSettings } from '@/services/device/permissionsService';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -88,10 +89,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   deniedTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     marginBottom: 10,
   },
   body: {

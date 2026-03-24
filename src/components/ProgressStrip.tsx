@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/GlassCard';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 interface ProgressStripProps {
@@ -57,10 +58,12 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   label: {
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: fontFamilies.medium,
   },
   glow: {
     position: 'absolute',

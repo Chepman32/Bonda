@@ -16,6 +16,7 @@ import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 import type { NormalizedContact } from '@/models/entities';
 
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
     textAlign: 'center',
     paddingHorizontal: 8,
   },

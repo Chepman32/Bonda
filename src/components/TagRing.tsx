@@ -18,6 +18,7 @@ import {
 import { GlassCard } from '@/components/GlassCard';
 import { CONTACT_TAGS } from '@/constants/app';
 import type { ContactTag } from '@/models/entities';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 const tagIcons = {
@@ -102,6 +103,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
     textTransform: 'capitalize',
   },
 });

@@ -38,6 +38,7 @@ import {
   type MatrixCommit,
 } from '@/services/scoringService';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EvaluationDeck'>;
@@ -621,6 +622,7 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontSize: 36,
     fontWeight: '900',
+    fontFamily: fontFamilies.heavy,
     letterSpacing: 2,
   },
   nopeStamp: {
@@ -638,6 +640,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 36,
     fontWeight: '900',
+    fontFamily: fontFamilies.heavy,
     letterSpacing: 2,
   },
   bottomOverlay: {
@@ -663,6 +666,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.72)',
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
@@ -688,6 +692,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -0.5,
   },
   tagRow: {
@@ -705,6 +710,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '500',
+    fontFamily: fontFamilies.medium,
   },
   actionRow: {
     position: 'absolute',
@@ -731,6 +737,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   emptyBody: {
     fontSize: 15,
@@ -739,6 +746,7 @@ const styles = StyleSheet.create({
   emptyAction: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     color: '#FFFFFF',
   },
 });

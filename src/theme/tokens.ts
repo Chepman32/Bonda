@@ -1,3 +1,5 @@
+import { fontFamilies } from './fonts';
+
 export const palette = {
   graphite: '#080B12',
   midnight: '#111827',
@@ -41,35 +43,41 @@ export const radius = {
 
 export const typography = {
   hero: {
+    fontFamily: fontFamilies.bold,
     fontSize: 34,
     lineHeight: 40,
     fontWeight: '700' as const,
     letterSpacing: -0.8,
   },
   title: {
+    fontFamily: fontFamilies.bold,
     fontSize: 24,
     lineHeight: 30,
     fontWeight: '700' as const,
     letterSpacing: -0.4,
   },
   section: {
+    fontFamily: fontFamilies.semibold,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '600' as const,
     letterSpacing: -0.3,
   },
   body: {
+    fontFamily: fontFamilies.regular,
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '400' as const,
   },
   caption: {
+    fontFamily: fontFamilies.medium,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '500' as const,
     letterSpacing: 0.2,
   },
   metric: {
+    fontFamily: fontFamilies.heavy,
     fontSize: 28,
     lineHeight: 32,
     fontWeight: '700' as const,

@@ -17,6 +17,7 @@ import {
 } from '@/services/device/biometricService';
 import { getDiagnosticsRepository } from '@/services/repositories/diagnosticsRepository';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 export function BiometricLockGate() {
@@ -214,6 +215,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -0.8,
   },
   body: {
@@ -224,5 +226,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
 });

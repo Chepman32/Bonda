@@ -6,6 +6,7 @@ import { Screen } from '@/components/Screen';
 import type { TabScreenProps } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { formatSessionDate } from '@/utils/formatting';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = TabScreenProps<'SessionHistory'>;
@@ -70,6 +71,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     marginBottom: 6,
   },
   card: {
@@ -78,6 +80,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     textTransform: 'capitalize',
   },
   cardBody: {
@@ -94,9 +97,11 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   metricLabel: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
 });

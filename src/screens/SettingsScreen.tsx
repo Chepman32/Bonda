@@ -21,6 +21,7 @@ import {
   getBiometricCapability,
   type BiometricCapability,
 } from '@/services/device/biometricService';
+import { fontFamilies } from '@/theme/fonts';
 import { themes, useAppTheme } from '@/theme';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -352,6 +353,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   card: {
     gap: 16,
@@ -359,6 +361,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   sectionBody: {
     fontSize: 14,
@@ -386,6 +389,7 @@ const styles = StyleSheet.create({
   themeLabel: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   themeCheck: {
     position: 'absolute',
@@ -408,6 +412,7 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   toggleDescription: {
     fontSize: 13,

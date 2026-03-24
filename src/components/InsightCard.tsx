@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/GlassCard';
 import type { InsightCard as InsightCardModel } from '@/models/entities';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 interface InsightCardProps {
@@ -41,10 +42,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   metric: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   body: {
     fontSize: 14,

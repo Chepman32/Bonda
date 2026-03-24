@@ -9,6 +9,13 @@
 /* Begin PBXBuildFile section */
 		0C80B921A6F3F58F76C31292 /* libPods-Bonda.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-Bonda.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1A2B3C4D5E6F708192A3B4C1 /* Helvetica.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C2 /* Helvetica.ttf */; };
+		1A2B3C4D5E6F708192A3B4C3 /* Helvetica-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C4 /* Helvetica-Bold.ttf */; };
+		1A2B3C4D5E6F708192A3B4C5 /* Helvetica-BoldOblique.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C6 /* Helvetica-BoldOblique.ttf */; };
+		1A2B3C4D5E6F708192A3B4C7 /* Helvetica-Compressed.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4C8 /* Helvetica-Compressed.otf */; };
+		1A2B3C4D5E6F708192A3B4C9 /* Helvetica-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4CA /* Helvetica-Light.ttf */; };
+		1A2B3C4D5E6F708192A3B4CB /* Helvetica-Oblique.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4CC /* Helvetica-Oblique.ttf */; };
+		1A2B3C4D5E6F708192A3B4CD /* HelveticaRounded-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F708192A3B4CE /* HelveticaRounded-Bold.otf */; };
 		48340C62672E46748B5533AD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		4A9717EA9B4E5C8F006A9011 /* BondaExportModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9717E89B4E5C8F006A9011 /* BondaExportModule.swift */; };
 		4A9717EB9B4E5C8F006A9011 /* BondaExportModuleBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 4A9717E99B4E5C8F006A9011 /* BondaExportModuleBridge.m */; };
@@ -21,6 +28,13 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Bonda/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Bonda/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = Bonda/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4C2 /* Helvetica.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = Helvetica.ttf; path = Bonda/Fonts/Helvetica.ttf; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4C4 /* Helvetica-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Helvetica-Bold.ttf"; path = "Bonda/Fonts/Helvetica-Bold.ttf"; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4C6 /* Helvetica-BoldOblique.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Helvetica-BoldOblique.ttf"; path = "Bonda/Fonts/Helvetica-BoldOblique.ttf"; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4C8 /* Helvetica-Compressed.otf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Helvetica-Compressed.otf"; path = "Bonda/Fonts/Helvetica-Compressed.otf"; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4CA /* Helvetica-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Helvetica-Light.ttf"; path = "Bonda/Fonts/Helvetica-Light.ttf"; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4CC /* Helvetica-Oblique.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Helvetica-Oblique.ttf"; path = "Bonda/Fonts/Helvetica-Oblique.ttf"; sourceTree = "<group>"; };
+		1A2B3C4D5E6F708192A3B4CE /* HelveticaRounded-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "HelveticaRounded-Bold.otf"; path = "Bonda/Fonts/HelveticaRounded-Bold.otf"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-Bonda.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Bonda.debug.xcconfig"; path = "Target Support Files/Pods-Bonda/Pods-Bonda.debug.xcconfig"; sourceTree = "<group>"; };
 		4A9717E89B4E5C8F006A9011 /* BondaExportModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bonda/BondaExportModule.swift; sourceTree = "<group>"; };
 		4A9717E99B4E5C8F006A9011 /* BondaExportModuleBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Bonda/BondaExportModuleBridge.m; sourceTree = "<group>"; };
@@ -50,6 +64,13 @@
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				4A9717E89B4E5C8F006A9011 /* BondaExportModule.swift */,
 				4A9717E99B4E5C8F006A9011 /* BondaExportModuleBridge.m */,
+				1A2B3C4D5E6F708192A3B4C2 /* Helvetica.ttf */,
+				1A2B3C4D5E6F708192A3B4C4 /* Helvetica-Bold.ttf */,
+				1A2B3C4D5E6F708192A3B4C6 /* Helvetica-BoldOblique.ttf */,
+				1A2B3C4D5E6F708192A3B4C8 /* Helvetica-Compressed.otf */,
+				1A2B3C4D5E6F708192A3B4CA /* Helvetica-Light.ttf */,
+				1A2B3C4D5E6F708192A3B4CC /* Helvetica-Oblique.ttf */,
+				1A2B3C4D5E6F708192A3B4CE /* HelveticaRounded-Bold.otf */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -164,6 +185,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A2B3C4D5E6F708192A3B4C3 /* Helvetica-Bold.ttf in Resources */,
+				1A2B3C4D5E6F708192A3B4C5 /* Helvetica-BoldOblique.ttf in Resources */,
+				1A2B3C4D5E6F708192A3B4C7 /* Helvetica-Compressed.otf in Resources */,
+				1A2B3C4D5E6F708192A3B4C9 /* Helvetica-Light.ttf in Resources */,
+				1A2B3C4D5E6F708192A3B4CB /* Helvetica-Oblique.ttf in Resources */,
+				1A2B3C4D5E6F708192A3B4CD /* HelveticaRounded-Bold.otf in Resources */,
+				1A2B3C4D5E6F708192A3B4C1 /* Helvetica.ttf in Resources */,
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				48340C62672E46748B5533AD /* PrivacyInfo.xcprivacy in Resources */,

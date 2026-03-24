@@ -14,6 +14,7 @@ import { computeSummaryMetrics } from '@/services/scoringService';
 import type { ExportPreset } from '@/models/entities';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ExportSnapshot'>;
@@ -106,6 +107,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   preview: {
     gap: 14,
@@ -114,6 +116,7 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   previewBody: {
     fontSize: 14,
@@ -127,6 +130,7 @@ const styles = StyleSheet.create({
   metric: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   types: {
     gap: 12,

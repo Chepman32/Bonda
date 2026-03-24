@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { Binoculars, RotateCcw, SkipForward } from 'lucide-react-native';
 
 import { GlassCard } from '@/components/GlassCard';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 interface FloatingDockProps {
@@ -80,5 +81,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
 });

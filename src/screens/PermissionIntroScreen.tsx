@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -92,6 +93,7 @@ const styles = StyleSheet.create({
     fontSize: 34,
     lineHeight: 40,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -1,
   },
   body: {
@@ -109,6 +111,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   actions: {
     gap: 12,

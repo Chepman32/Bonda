@@ -11,6 +11,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 import {
   buildDragColumnUpdates,
@@ -449,6 +450,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 9,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
     textAlign: 'center',
   },
   gridRow: {
@@ -482,6 +484,7 @@ const styles = StyleSheet.create({
   hint: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
     textAlign: 'center',
   },
 });

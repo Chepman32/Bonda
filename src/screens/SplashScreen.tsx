@@ -15,6 +15,7 @@ import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
@@ -113,6 +114,7 @@ const styles = StyleSheet.create({
   wordmark: {
     fontSize: 42,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -1.6,
   },
   subtitle: {

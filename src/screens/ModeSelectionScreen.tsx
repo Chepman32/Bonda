@@ -15,6 +15,7 @@ import type { EvaluationMode } from '@/models/entities';
 import { ROUTES } from '@/navigation/routes';
 import type { TabScreenProps } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = TabScreenProps<'ModeSelection'>;
@@ -202,6 +203,7 @@ const styles = StyleSheet.create({
   resumeLabel: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   circleButton: {
     overflow: 'hidden',
@@ -215,6 +217,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 28,
     fontWeight: '800',
+    fontFamily: fontFamilies.heavy,
     letterSpacing: -0.5,
     textAlign: 'center',
     lineHeight: 36,
@@ -240,6 +243,7 @@ const styles = StyleSheet.create({
   dialogTitle: {
     fontSize: 22,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -0.3,
     marginBottom: 18,
   },
@@ -255,6 +259,7 @@ const styles = StyleSheet.create({
   modeTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   modeBody: {
     fontSize: 14,
@@ -267,5 +272,6 @@ const styles = StyleSheet.create({
   cancelLabel: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
 });

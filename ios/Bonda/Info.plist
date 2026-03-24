@@ -37,6 +37,16 @@
 	<string>Bonda needs access to your contacts to build a private, on-device relationship map.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Bonda uses Face ID to protect your relationship map when you reopen the app.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Fonts/Helvetica.ttf</string>
+		<string>Fonts/Helvetica-Bold.ttf</string>
+		<string>Fonts/Helvetica-BoldOblique.ttf</string>
+		<string>Fonts/Helvetica-Compressed.otf</string>
+		<string>Fonts/Helvetica-Light.ttf</string>
+		<string>Fonts/Helvetica-Oblique.ttf</string>
+		<string>Fonts/HelveticaRounded-Bold.otf</string>
+	</array>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

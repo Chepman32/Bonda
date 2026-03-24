@@ -9,6 +9,7 @@ import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
 import { normalizeProgress } from '@/utils/math';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -109,6 +110,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   body: {
     fontSize: 15,
@@ -125,5 +127,6 @@ const styles = StyleSheet.create({
   rowValue: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
 });

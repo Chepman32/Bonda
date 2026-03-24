@@ -21,6 +21,7 @@ import { computeSummaryMetrics } from '@/services/scoringService';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Summary'>;
@@ -173,6 +174,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   subtitle: {
     fontSize: 15,
@@ -196,6 +198,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     letterSpacing: -0.4,
   },
   metricRow: {
@@ -208,10 +211,12 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   metricLabel: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   modeRow: {
     flexDirection: 'row',
@@ -225,6 +230,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     textTransform: 'capitalize',
   },
   insightList: {

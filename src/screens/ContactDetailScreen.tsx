@@ -28,6 +28,7 @@ import { CONTACT_TAGS, DEFAULT_SCORES } from '@/constants/app';
 import type { ContactTag } from '@/models/entities';
 import type { RootStackParamList } from '@/navigation/types';
 import { useAppStore } from '@/store/useAppStore';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ContactDetail'>;
@@ -338,6 +339,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   meta: {
     textAlign: 'center',
@@ -357,14 +359,17 @@ const styles = StyleSheet.create({
   sliderLabel: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
   sliderValue: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   tagWrap: {
     flexDirection: 'row',
@@ -378,6 +383,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
     textTransform: 'capitalize',
   },
   noteInput: {
@@ -397,5 +403,6 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: fontFamilies.semibold,
   },
 });

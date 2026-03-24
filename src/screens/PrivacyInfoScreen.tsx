@@ -7,6 +7,7 @@ import { DismissButton } from '@/components/DismissButton';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
 import type { RootStackParamList } from '@/navigation/types';
+import { fontFamilies } from '@/theme/fonts';
 import { useAppTheme } from '@/theme';
 
 const cards = [
@@ -66,6 +67,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
   body: {
     fontSize: 15,
@@ -80,5 +82,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: fontFamilies.bold,
   },
 });
