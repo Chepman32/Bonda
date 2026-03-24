@@ -1,22 +1,67 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ChevronLeft } from 'lucide-react-native';
+import React, { useCallback, useEffect } from 'react';
+import {
+  Dimensions,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  clamp,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import LinearGradient from 'react-native-linear-gradient';
+import {
+  CheckCircle,
+  Heart,
+  RotateCcw,
+  Star,
+  X,
+  Zap,
+} from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { ContactAvatar } from '@/components/ContactAvatar';
-import { EvaluationDotMatrix } from '@/components/EvaluationDotMatrix';
-import { FloatingDock } from '@/components/FloatingDock';
 import { GlassCard } from '@/components/GlassCard';
-import { useHotReloadContactAvatars } from '@/hooks/useHotReloadContactAvatars';
 import { Screen } from '@/components/Screen';
+import { useHotReloadContactAvatars } from '@/hooks/useHotReloadContactAvatars';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
-import { deriveColumnSelectionsFromScores } from '@/services/scoringService';
-import { fireThresholdHaptic } from '@/services/device/hapticsService';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'EvaluationDeck'>;
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SWIPE_THRESHOLD = 100;
+const VELOCITY_THRESHOLD = 500;
+const STAMP_OPACITY_DISTANCE = 80;
+
+const PORTRAIT_GRADIENTS = [
+  ['#7C3AED', '#312E81'],
+  ['#2563EB', '#0F172A'],
+  ['#0F766E', '#164E63'],
+  ['#BE185D', '#4C1D95'],
+  ['#9A3412', '#1F2937'],
+  ['#047857', '#1E3A8A'],
+] as const;
+
+function paletteForSeed(seed: string): readonly [string, string] {
+  const index = [...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return PORTRAIT_GRADIENTS[index % PORTRAIT_GRADIENTS.length];
+}
+
+function normalizeAvatarUri(uri: string): string {
+  if (/^(file|content|https?|ph|assets-library|data):\/\//.test(uri)) {
+    return uri;
+  }
+  return `file://${uri}`;
+}
 
 export function EvaluationDeckScreen({ navigation }: Props) {
   const theme = useAppTheme();
@@ -24,114 +69,139 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   const evaluations = useAppStore(state => state.evaluations);
   const session = useAppStore(state => state.session);
   const selectedContactId = useAppStore(state => state.selectedContactId);
-  const settings = useAppStore(state => state.settings);
-  const commitMatrixEvaluation = useAppStore(
-    state => state.commitMatrixEvaluation,
+  const commitGestureEvaluation = useAppStore(
+    state => state.commitGestureEvaluation,
   );
   const skipCurrentContact = useAppStore(state => state.skipCurrentContact);
   const undoLastEvaluation = useAppStore(state => state.undoLastEvaluation);
+  const saveContactDetail = useAppStore(state => state.saveContactDetail);
   const completeSession = useAppStore(state => state.completeSession);
-  const [pendingSelections, setPendingSelections] = useState<
-    Record<number, number>
-  >({});
-  const [isMatrixAdvancing, setIsMatrixAdvancing] = useState(false);
-  const [advanceAnimationToken, setAdvanceAnimationToken] = useState(0);
-  const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useHotReloadContactAvatars();
+
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
   const currentContact = contacts.find(
     contact => contact.id === selectedContactId,
   );
-  const currentEvaluation = Object.values(evaluations).find(
-    item => item.contactId === currentContact?.id,
-  );
   const processedCount = Object.keys(evaluations).length;
 
   useEffect(() => {
-    if (!session || processedCount === 0 || processedCount < contacts.length) {
+    if (
+      !session ||
+      session.status === 'completed' ||
+      processedCount === 0 ||
+      processedCount < contacts.length
+    ) {
       return;
     }
-
     void completeSession().then(() => {
       navigation.replace(ROUTES.Summary);
     });
   }, [completeSession, contacts.length, navigation, processedCount, session]);
 
+  // Reset card position when contact changes
   useEffect(() => {
-    if (currentEvaluation?.scores) {
-      setPendingSelections(
-        deriveColumnSelectionsFromScores(currentEvaluation.scores, 9),
-      );
-    } else {
-      setPendingSelections({});
-    }
+    translateX.value = 0;
+    translateY.value = 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentContact?.id]);
 
-  useEffect(
-    () => () => {
-      if (advanceTimeoutRef.current) {
-        clearTimeout(advanceTimeoutRef.current);
-      }
-    },
-    [],
-  );
-
-  const startAdvanceTransition = useCallback(
-    (nextSelections: Record<number, number>) => {
-      if (isMatrixAdvancing) {
-        return;
-      }
-
-      setIsMatrixAdvancing(true);
-      setAdvanceAnimationToken(token => token + 1);
-
-      if (advanceTimeoutRef.current) {
-        clearTimeout(advanceTimeoutRef.current);
-      }
-
-      advanceTimeoutRef.current = setTimeout(() => {
-        void commitMatrixEvaluation({
-          columnCount: 5,
-          rowCount: 9,
-          selections: nextSelections,
-        });
-        setPendingSelections({});
-        setIsMatrixAdvancing(false);
-        advanceTimeoutRef.current = null;
-      }, 430);
-    },
-    [commitMatrixEvaluation, isMatrixAdvancing],
-  );
-
-  const handleColumnPanUpdate = useCallback(
-    (colIndex: number, rowIndex: number) => {
-      if (isMatrixAdvancing) {
-        return;
-      }
-
-      setPendingSelections(prev => {
-        if (prev[colIndex] === rowIndex) return prev;
-        fireThresholdHaptic(settings);
-        return { ...prev, [colIndex]: rowIndex };
-      });
-    },
-    [isMatrixAdvancing, settings],
-  );
-
-  const handleColumnPanEnd = useCallback(() => {
-    if (isMatrixAdvancing) {
-      return;
-    }
-
-    setPendingSelections(prev => {
-      if (Object.keys(prev).length === 5) {
-        startAdvanceTransition(prev);
-      }
-      return prev;
+  const commitLike = useCallback(() => {
+    void commitGestureEvaluation({
+      translationX: 200,
+      translationY: -50,
+      velocityX: 1000,
+      velocityY: 0,
     });
-  }, [isMatrixAdvancing, startAdvanceTransition]);
+  }, [commitGestureEvaluation]);
+
+  const commitNope = useCallback(() => {
+    void skipCurrentContact();
+  }, [skipCurrentContact]);
+
+  const commitStar = useCallback(() => {
+    if (!currentContact) return;
+    void commitGestureEvaluation({
+      translationX: 200,
+      translationY: -50,
+      velocityX: 1000,
+      velocityY: 0,
+    }).then(() => {
+      void saveContactDetail({
+        contactId: currentContact.id,
+        pinnedToCore: true,
+      });
+    });
+  }, [commitGestureEvaluation, currentContact, saveContactDetail]);
+
+  const animateOffRight = useCallback(
+    (onDone: () => void) => {
+      translateX.value = withTiming(SCREEN_WIDTH + 100, { duration: 300 }, () =>
+        runOnJS(onDone)(),
+      );
+    },
+    [translateX],
+  );
+
+  const animateOffLeft = useCallback(
+    (onDone: () => void) => {
+      translateX.value = withTiming(
+        -(SCREEN_WIDTH + 100),
+        { duration: 300 },
+        () => runOnJS(onDone)(),
+      );
+    },
+    [translateX],
+  );
+
+  const panGesture = Gesture.Pan()
+    .onUpdate(event => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd(event => {
+      const shouldDismissRight =
+        event.translationX > SWIPE_THRESHOLD ||
+        event.velocityX > VELOCITY_THRESHOLD;
+      const shouldDismissLeft =
+        event.translationX < -SWIPE_THRESHOLD ||
+        event.velocityX < -VELOCITY_THRESHOLD;
+
+      if (shouldDismissRight) {
+        translateX.value = withTiming(
+          SCREEN_WIDTH + 100,
+          { duration: 300 },
+          () => runOnJS(commitLike)(),
+        );
+      } else if (shouldDismissLeft) {
+        translateX.value = withTiming(
+          -(SCREEN_WIDTH + 100),
+          { duration: 300 },
+          () => runOnJS(commitNope)(),
+        );
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      }
+    });
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { rotate: `${translateX.value / 15}deg` },
+    ],
+  }));
+
+  const likeStampStyle = useAnimatedStyle(() => ({
+    opacity: clamp(translateX.value / STAMP_OPACITY_DISTANCE, 0, 1),
+  }));
+
+  const nopeStampStyle = useAnimatedStyle(() => ({
+    opacity: clamp(-translateX.value / STAMP_OPACITY_DISTANCE, 0, 1),
+  }));
 
   if (!currentContact) {
     return (
@@ -140,153 +210,315 @@ export function EvaluationDeckScreen({ navigation }: Props) {
           <Text style={[styles.emptyTitle, { color: theme.text }]}>
             Your deck is ready for summary.
           </Text>
-          <PrimaryDockAction
-            label="Go to summary"
+          <Text
+            accessibilityRole="button"
             onPress={() => navigation.replace(ROUTES.Summary)}
-          />
+            style={styles.emptyAction}
+          >
+            Go to summary
+          </Text>
         </GlassCard>
       </Screen>
     );
   }
 
-  return (
-    <Screen contentStyle={styles.deckScreen}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={() => navigation.goBack()}
-        style={styles.backButton}
-      >
-        <ChevronLeft color={theme.accent} size={28} strokeWidth={2.5} />
-        <Text style={[styles.backLabel, { color: theme.accent }]}>Back</Text>
-      </Pressable>
-      <GlassCard style={styles.activeCard}>
-        <View style={styles.cardHeader}>
-          <ContactAvatar contact={currentContact} size={44} />
-          <View style={styles.cardHeaderCopy}>
-            <Text style={[styles.contactName, { color: theme.text }]}>
-              {currentContact.displayName}
-            </Text>
-          </View>
-        </View>
-        <EvaluationDotMatrix
-          selections={pendingSelections}
-          interactionDisabled={isMatrixAdvancing}
-          advanceAnimationToken={advanceAnimationToken}
-          onColumnSelect={(colIndex, rowIndex) => {
-            if (isMatrixAdvancing) {
-              return;
-            }
+  const avatarUri = currentContact.avatarUri
+    ? normalizeAvatarUri(currentContact.avatarUri)
+    : undefined;
+  const gradientColors = paletteForSeed(currentContact.avatarSeed);
 
-            if (pendingSelections[colIndex] === rowIndex) {
-              const next = { ...pendingSelections };
-              delete next[colIndex];
-              setPendingSelections(next);
-              return;
-            }
-            const next = { ...pendingSelections, [colIndex]: rowIndex };
-            setPendingSelections(next);
-            if (Object.keys(next).length === 5) {
-              startAdvanceTransition(next);
-            }
-          }}
-          onColumnPanUpdate={handleColumnPanUpdate}
-          onColumnPanEnd={handleColumnPanEnd}
-        />
-      </GlassCard>
-      <FloatingDock
-        onUndo={() => void undoLastEvaluation()}
-        onSkip={() => void skipCurrentContact()}
-        onViewAll={() => navigation.navigate(ROUTES.ContactGrid)}
-      />
-    </Screen>
+  const totalBars = Math.min(contacts.length, 20);
+  const filledBars = Math.min(processedCount, totalBars);
+
+  const tags: string[] = [];
+  if (currentContact.company) tags.push(currentContact.company);
+  if (currentContact.jobTitle) tags.push(currentContact.jobTitle);
+
+  return (
+    <View style={styles.container}>
+      {/* Progress bars */}
+      <View style={styles.progressBars}>
+        {Array.from({ length: totalBars }).map((_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.progressBar,
+              {
+                backgroundColor:
+                  i < filledBars
+                    ? 'rgba(255,255,255,0.9)'
+                    : 'rgba(255,255,255,0.3)',
+              },
+            ]}
+          />
+        ))}
+      </View>
+
+      {/* Swipeable card */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.card, cardStyle]}>
+          {/* Full-screen avatar background */}
+          {avatarUri ? (
+            <Image
+              accessibilityIgnoresInvertColors
+              source={{ uri: avatarUri }}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode="cover"
+            />
+          ) : (
+            <LinearGradient
+              colors={[...gradientColors]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+          )}
+
+          {/* LIKE stamp */}
+          <Animated.View style={[styles.likeStamp, likeStampStyle]}>
+            <Text style={styles.likeStampText}>LIKE</Text>
+          </Animated.View>
+
+          {/* NOPE stamp */}
+          <Animated.View style={[styles.nopeStamp, nopeStampStyle]}>
+            <Text style={styles.nopeStampText}>NOPE</Text>
+          </Animated.View>
+
+          {/* Bottom gradient overlay + info */}
+          <View style={styles.bottomOverlay}>
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.9)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFillObject}
+            />
+            {/* Name row */}
+            <View style={styles.nameRow}>
+              <Text style={styles.contactName}>
+                {currentContact.displayName}
+              </Text>
+              {avatarUri ? (
+                <CheckCircle
+                  size={20}
+                  color="#3B82F6"
+                  fill="#3B82F6"
+                  strokeWidth={0}
+                />
+              ) : null}
+            </View>
+
+            {/* Tag pills */}
+            {tags.length > 0 ? (
+              <View style={styles.tagRow}>
+                {tags.map(tag => (
+                  <View key={tag} style={styles.tagPill}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </Animated.View>
+      </GestureDetector>
+
+      {/* Action buttons */}
+      <View style={styles.actionRow}>
+        {/* Undo */}
+        <ActionButton
+          onPress={() => void undoLastEvaluation()}
+          color="#F97316"
+          size={54}
+        >
+          <RotateCcw color="#F97316" size={22} />
+        </ActionButton>
+
+        {/* Nope */}
+        <ActionButton
+          onPress={() => animateOffLeft(commitNope)}
+          color="#EF4444"
+          size={62}
+        >
+          <X color="#EF4444" size={28} />
+        </ActionButton>
+
+        {/* Star */}
+        <ActionButton
+          onPress={() => animateOffRight(commitStar)}
+          color="#3B82F6"
+          size={54}
+        >
+          <Star color="#3B82F6" size={22} />
+        </ActionButton>
+
+        {/* Like */}
+        <ActionButton
+          onPress={() => animateOffRight(commitLike)}
+          color="#22C55E"
+          size={62}
+        >
+          <Heart color="#22C55E" size={28} />
+        </ActionButton>
+
+        {/* Bolt / Deep dive */}
+        <ActionButton
+          onPress={() =>
+            navigation.navigate(ROUTES.ContactDetail, {
+              contactId: currentContact.id,
+            })
+          }
+          color="#A855F7"
+          size={54}
+        >
+          <Zap color="#A855F7" size={22} />
+        </ActionButton>
+      </View>
+    </View>
   );
 }
 
-function PrimaryDockAction({
-  label,
+function ActionButton({
   onPress,
+  color,
+  size,
+  children,
 }: {
-  label: string;
   onPress: () => void;
+  color: string;
+  size: number;
+  children: React.ReactNode;
 }) {
   return (
-    <Text
-      accessibilityRole="button"
+    <Pressable
       onPress={onPress}
-      style={styles.emptyAction}
+      style={[
+        styles.actionButton,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderColor: color,
+        },
+      ]}
     >
-      {label}
-    </Text>
+      {children}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  deckScreen: {
+  container: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 12,
+    backgroundColor: '#000',
   },
-  backButton: {
+  progressBars: {
+    position: 'absolute',
+    top: 56,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 4,
+    zIndex: 10,
+  },
+  progressBar: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+  },
+  card: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 120,
+    overflow: 'hidden',
+    borderRadius: 0,
+  },
+  likeStamp: {
+    position: 'absolute',
+    top: 80,
+    left: 24,
+    borderWidth: 4,
+    borderColor: '#22C55E',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    transform: [{ rotate: '-15deg' }],
+  },
+  likeStampText: {
+    color: '#22C55E',
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  nopeStamp: {
+    position: 'absolute',
+    top: 80,
+    right: 24,
+    borderWidth: 4,
+    borderColor: '#EF4444',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    transform: [{ rotate: '15deg' }],
+  },
+  nopeStampText: {
+    color: '#EF4444',
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 80,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+  },
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: -6,
-  },
-  backLabel: {
-    fontSize: 17,
-    fontWeight: '400',
-  },
-  activeCard: {
-    flex: 1,
-    gap: 12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  cardHeaderCopy: {
-    flex: 1,
-    gap: 2,
+    gap: 8,
   },
   contactName: {
-    fontSize: 18,
-    lineHeight: 22,
+    color: '#FFFFFF',
+    fontSize: 28,
     fontWeight: '700',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   },
-  contactMeta: {
-    fontSize: 12,
-  },
-  metrics: {
+  tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
+    marginTop: 8,
   },
-  metricPill: {
-    fontSize: 12,
-    fontWeight: '600',
+  tagPill: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  instructions: {
-    gap: 10,
-    alignItems: 'center',
-  },
-  instruction: {
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  quickAction: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  summaryBand: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryMetric: {
+  tagText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
+  },
+  actionRow: {
+    position: 'absolute',
+    bottom: 36,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  actionButton: {
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   empty: {
     justifyContent: 'center',
