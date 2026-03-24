@@ -90,6 +90,9 @@ function canMergeContact(
   left: NormalizedContact,
   right: NormalizedContact,
 ): boolean {
+  if (!left.sortName || !right.sortName) {
+    return false;
+  }
   if (left.sortName !== right.sortName) {
     return false;
   }
@@ -251,12 +254,22 @@ export async function importAndNormalizeContacts(options: {
     }
   }
 
-  const hiddenContacts = mergedContacts.filter(
-    contact => !contact.hasName && contact.phoneNumbers.length === 0,
-  ).length;
+  onProgress?.({
+    imported: normalizedContacts.length,
+    deduplicated,
+    hidden: 0,
+    ready: mergedContacts.length,
+    total: normalizedContacts.length,
+    stage: 'normalizing',
+  });
+
   const readyContacts = mergedContacts.filter(
-    contact => contact.hasName || contact.phoneNumbers.length > 0,
+    contact =>
+      contact.hasName ||
+      contact.phoneNumbers.length > 0 ||
+      contact.emailAddresses.length > 0,
   );
+  const hiddenContacts = mergedContacts.length - readyContacts.length;
 
   const progress: ImportProgress = {
     imported: normalizedContacts.length,

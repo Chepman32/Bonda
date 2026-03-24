@@ -209,6 +209,11 @@ export function SettingsScreen({ navigation }: Props) {
 
       <View style={styles.actions}>
         <PrimaryButton
+          label="Re-import contacts"
+          onPress={() => navigation.navigate(ROUTES.ImportNormalize)}
+          variant="secondary"
+        />
+        <PrimaryButton
           label="Privacy details"
           onPress={() => navigation.navigate(ROUTES.PrivacyInfo)}
           variant="secondary"

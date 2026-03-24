@@ -44,9 +44,13 @@ target 'Bonda' do
     )
 
     installer.pods_project.targets.each do |target|
-      next unless target.name == 'react-native-config'
-
       target.build_configurations.each do |build_configuration|
+        if ['react-native-config', 'react-native-view-shot'].include?(target.name)
+          build_configuration.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        end
+
+        next unless target.name == 'react-native-config'
+
         build_configuration.build_settings['ENVFILE'] = ENVFILES[build_configuration.name]
       end
     end

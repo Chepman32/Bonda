@@ -9,6 +9,7 @@ import {
 } from '@/services/device/hapticsService';
 import { getDataRepository } from '@/services/repositories/dataRepository';
 import { getDiagnosticsRepository } from '@/services/repositories/diagnosticsRepository';
+import { getSettingsRepository } from '@/services/repositories/settingsRepository';
 import {
   deriveConfidence,
   deriveMatrixConfidence,
@@ -175,6 +176,7 @@ export const createEvaluationSlice: StateCreator<
     const diagnosticsRepository = getDiagnosticsRepository();
     const { selectedMode, contacts, importProgress } = get();
 
+    await dataRepository.completeUnfinishedSessions();
     const session = await dataRepository.createSession({
       mode: selectedMode,
       source: contacts[0]?.source ?? 'demo',
@@ -184,6 +186,9 @@ export const createEvaluationSlice: StateCreator<
     await diagnosticsRepository.log('info', 'Session started', {
       sessionId: session.id,
       mode: selectedMode,
+    });
+    await getSettingsRepository().mergeSettings({
+      lastSessionId: session.id,
     });
 
     set({
@@ -444,6 +449,9 @@ export const createEvaluationSlice: StateCreator<
     fireConfirmationHaptic(settings);
     set({ session: nextSession });
     await getDataRepository().saveSession(nextSession);
+    await getSettingsRepository().mergeSettings({
+      lastSessionId: undefined,
+    });
   },
   moveContactToCluster: async (contactId, clusterId) => {
     const clusters = await getDataRepository().moveContactCluster(

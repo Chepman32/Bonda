@@ -73,6 +73,63 @@ describe('contactImportService', () => {
     expect(result.contacts[0].phoneNumbers).toEqual(['+15551111111']);
   });
 
+  it('does not merge contacts with empty sortName', async () => {
+    mockedContacts.getAll.mockResolvedValue([
+      {
+        recordID: '1',
+        givenName: '',
+        familyName: '',
+        displayName: '',
+        phoneNumbers: [{ number: '+1 555 000 0001' }],
+        emailAddresses: [],
+        company: '',
+        jobTitle: '',
+        note: '',
+        thumbnailPath: '',
+      },
+      {
+        recordID: '2',
+        givenName: '',
+        familyName: '',
+        displayName: '',
+        phoneNumbers: [{ number: '+1 555 000 0002' }],
+        emailAddresses: [],
+        company: '',
+        jobTitle: '',
+        note: '',
+        thumbnailPath: '',
+      },
+    ]);
+
+    const result = await importAndNormalizeContacts({});
+
+    expect(result.progress.deduplicated).toBe(0);
+    expect(result.contacts).toHaveLength(2);
+  });
+
+  it('includes email-only contacts in the ready set', async () => {
+    mockedContacts.getAll.mockResolvedValue([
+      {
+        recordID: '1',
+        givenName: '',
+        familyName: '',
+        displayName: '',
+        phoneNumbers: [],
+        emailAddresses: [{ email: 'someone@example.com' }],
+        company: '',
+        jobTitle: '',
+        note: '',
+        thumbnailPath: '',
+      },
+    ]);
+
+    const result = await importAndNormalizeContacts({});
+
+    expect(result.progress.hidden).toBe(0);
+    expect(result.contacts).toHaveLength(1);
+    expect(result.contacts[0].emailAddresses).toEqual(['someone@example.com']);
+  });
+
   it('refreshes avatar paths for existing device contacts without changing ids', async () => {
     mockedContacts.getAll.mockResolvedValue([
       {

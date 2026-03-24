@@ -140,6 +140,7 @@ export const resources = {
         exportHideNames: 'Hide names in exports',
         diagnostics: 'Local diagnostics',
         resetAll: 'Reset all ratings',
+        reimport: 'Re-import contacts',
       },
       export: {
         title: 'Export snapshot',

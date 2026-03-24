@@ -69,9 +69,18 @@ export const createAppShellSlice: StateCreator<
           diagnosticsRepository.listRecentEvents(),
           dataRepository.listClusters(),
         ]);
-      const activeSession = history.find(
-        session => session.status === 'active' || session.status === 'paused',
-      );
+      const preferredSession = settings.lastSessionId
+        ? history.find(
+            session =>
+              session.id === settings.lastSessionId &&
+              (session.status === 'active' || session.status === 'paused'),
+          )
+        : undefined;
+      const activeSession =
+        preferredSession ??
+        history.find(
+          session => session.status === 'active' || session.status === 'paused',
+        );
       const evaluations = activeSession
         ? await dataRepository.listEvaluations(activeSession.id)
         : [];
@@ -151,15 +160,26 @@ export const createAppShellSlice: StateCreator<
       await dataRepository.replaceContacts(contacts);
       const settings = await settingsRepository.mergeSettings({
         hasCompletedOnboarding: true,
+        lastSessionId: undefined,
       });
       await diagnosticsRepository.log('info', 'Contacts imported', {
         ...progress,
       });
 
+      await dataRepository.completeUnfinishedSessions();
+      const history = await dataRepository.listSessions();
+
       set({
         contacts,
         importProgress: progress,
         settings,
+        session: null,
+        evaluations: {},
+        clusters: [],
+        insights: [],
+        selectedContactId: undefined,
+        reviewQueueIds: [],
+        history,
         errorMessage: undefined,
       });
     } catch (error) {

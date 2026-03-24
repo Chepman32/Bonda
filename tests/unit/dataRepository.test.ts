@@ -1,6 +1,10 @@
 import { DataRepository } from '@/services/repositories/dataRepository';
 
-import { makeContact, makeEvaluation } from '../factories/entities';
+import {
+  makeContact,
+  makeEvaluation,
+  makeSession,
+} from '../factories/entities';
 
 describe('DataRepository', () => {
   it('persists contacts, sessions, evaluations, clusters, exports, and diagnostics in memory tests', async () => {
@@ -50,5 +54,42 @@ describe('DataRepository', () => {
     await expect(repository.listClusters()).resolves.toEqual(clusters);
     await expect(repository.listExports()).resolves.toHaveLength(1);
     await expect(repository.listDiagnostics(10)).resolves.toHaveLength(1);
+  });
+
+  it('completes unfinished sessions without touching completed history', async () => {
+    const repository = new DataRepository();
+
+    await repository.saveSession(
+      makeSession({
+        id: 'session-active',
+        status: 'active',
+      }),
+    );
+    await repository.saveSession(
+      makeSession({
+        id: 'session-paused',
+        status: 'paused',
+      }),
+    );
+    await repository.saveSession(
+      makeSession({
+        id: 'session-completed',
+        status: 'completed',
+        completedAt: '2026-03-20T01:00:00.000Z',
+      }),
+    );
+
+    await repository.completeUnfinishedSessions();
+    const sessions = await repository.listSessions();
+
+    expect(
+      sessions.find(session => session.id === 'session-active')?.status,
+    ).toBe('completed');
+    expect(
+      sessions.find(session => session.id === 'session-paused')?.status,
+    ).toBe('completed');
+    expect(
+      sessions.find(session => session.id === 'session-completed')?.completedAt,
+    ).toBe('2026-03-20T01:00:00.000Z');
   });
 });

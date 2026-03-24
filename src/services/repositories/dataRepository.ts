@@ -61,6 +61,31 @@ export class DataRepository {
     await adapter.saveSession(session);
   }
 
+  public async completeUnfinishedSessions(
+    exceptSessionId?: string,
+  ): Promise<void> {
+    const adapter = await this.adapter();
+    const sessions = await adapter.listSessions();
+    const now = new Date().toISOString();
+
+    await Promise.all(
+      sessions
+        .filter(
+          session =>
+            session.id !== exceptSessionId &&
+            (session.status === 'active' || session.status === 'paused'),
+        )
+        .map(session =>
+          adapter.saveSession({
+            ...session,
+            status: 'completed',
+            completedAt: session.completedAt ?? now,
+            updatedAt: now,
+          }),
+        ),
+    );
+  }
+
   public async getSession(
     sessionId: string,
   ): Promise<EvaluationSession | undefined> {
