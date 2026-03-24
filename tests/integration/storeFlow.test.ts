@@ -1,8 +1,14 @@
 import Contacts from 'react-native-contacts';
 import { check, RESULTS } from 'react-native-permissions';
 
+import { getDataRepository } from '@/services/repositories/dataRepository';
 import { useAppStore } from '@/store/useAppStore';
 
+import {
+  makeContact,
+  makeEvaluation,
+  makeSession,
+} from '../factories/entities';
 import { resetAppTestState } from '../helpers/resetStore';
 
 const mockedContacts = Contacts as unknown as {
@@ -53,5 +59,135 @@ describe('store flow', () => {
     expect(useAppStore.getState().session?.processedCount).toBe(1);
     expect(useAppStore.getState().clusters.length).toBeGreaterThan(0);
     expect(useAppStore.getState().insights.length).toBe(10);
+  });
+
+  it('resets in-memory evaluations when a new session starts', async () => {
+    await resetAppTestState();
+
+    useAppStore.setState({
+      contacts: [
+        makeContact({ id: 'contact-1', externalId: 'external-1' }),
+        makeContact({
+          id: 'contact-2',
+          externalId: 'external-2',
+          givenName: 'Ira',
+          familyName: 'West',
+          displayName: 'Ira West',
+          sortName: 'ira west',
+          avatarSeed: 'seed-2',
+          initials: 'IW',
+          phoneNumbers: ['+15550000002'],
+          emailAddresses: ['ira@example.com'],
+        }),
+      ],
+      importProgress: {
+        imported: 2,
+        deduplicated: 0,
+        hidden: 0,
+        ready: 2,
+        total: 2,
+        stage: 'complete',
+      },
+    });
+
+    await useAppStore.getState().startSession();
+    const firstSessionId = useAppStore.getState().session?.id;
+
+    await useAppStore.getState().commitGestureEvaluation({
+      translationX: 160,
+      translationY: -40,
+      velocityX: 800,
+      velocityY: 120,
+    });
+    await useAppStore.getState().completeSession();
+    await useAppStore.getState().startSession();
+
+    const state = useAppStore.getState();
+
+    expect(firstSessionId).toBeDefined();
+    expect(state.session?.processedCount).toBe(0);
+    expect(state.session?.status).toBe('active');
+    expect(state.evaluations).toEqual({});
+    expect(state.selectedContactId).toBe('contact-1');
+    await expect(getDataRepository().listEvaluations()).resolves.toHaveLength(
+      1,
+    );
+  });
+
+  it('advances using only active-session evaluations when older sessions exist', async () => {
+    await resetAppTestState();
+
+    useAppStore.setState({
+      contacts: [
+        makeContact({ id: 'contact-1', externalId: 'external-1' }),
+        makeContact({
+          id: 'contact-2',
+          externalId: 'external-2',
+          givenName: 'Ira',
+          familyName: 'West',
+          displayName: 'Ira West',
+          sortName: 'ira west',
+          avatarSeed: 'seed-2',
+          initials: 'IW',
+          phoneNumbers: ['+15550000002'],
+          emailAddresses: ['ira@example.com'],
+        }),
+        makeContact({
+          id: 'contact-3',
+          externalId: 'external-3',
+          givenName: 'Noa',
+          familyName: 'Lane',
+          displayName: 'Noa Lane',
+          sortName: 'noa lane',
+          avatarSeed: 'seed-3',
+          initials: 'NL',
+          phoneNumbers: ['+15550000003'],
+          emailAddresses: ['noa@example.com'],
+        }),
+      ],
+      importProgress: {
+        imported: 3,
+        deduplicated: 0,
+        hidden: 0,
+        ready: 3,
+        total: 3,
+        stage: 'complete',
+      },
+      session: makeSession({
+        id: 'session-2',
+        importedCount: 3,
+        readyCount: 3,
+      }),
+      selectedContactId: 'contact-1',
+      evaluations: {
+        oldContactTwo: makeEvaluation({
+          id: 'old-contact-2',
+          sessionId: 'session-1',
+          contactId: 'contact-2',
+        }),
+        oldContactThree: makeEvaluation({
+          id: 'old-contact-3',
+          sessionId: 'session-1',
+          contactId: 'contact-3',
+        }),
+      },
+    });
+
+    await useAppStore.getState().commitGestureEvaluation({
+      translationX: 200,
+      translationY: -50,
+      velocityX: 1000,
+      velocityY: 0,
+    });
+
+    const state = useAppStore.getState();
+
+    expect(state.selectedContactId).toBe('contact-2');
+    expect(state.session?.processedCount).toBe(1);
+    expect(
+      Object.values(state.evaluations).filter(
+        evaluation => evaluation.sessionId === 'session-2',
+      ),
+    ).toHaveLength(1);
   });
 });

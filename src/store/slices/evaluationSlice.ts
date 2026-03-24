@@ -51,12 +51,38 @@ export interface EvaluationSlice {
   moveContactToCluster: (contactId: string, clusterId: string) => Promise<void>;
 }
 
+function getSessionEvaluationList(
+  evaluations: StoreSlices['evaluations'],
+  sessionId?: string,
+): ContactEvaluation[] {
+  if (!sessionId) {
+    return [];
+  }
+
+  return Object.values(evaluations).filter(
+    item => item.sessionId === sessionId,
+  );
+}
+
+function findSessionEvaluationForContact(
+  evaluations: StoreSlices['evaluations'],
+  sessionId: string,
+  contactId: string,
+): ContactEvaluation | undefined {
+  return getSessionEvaluationList(evaluations, sessionId).find(
+    item => item.contactId === contactId,
+  );
+}
+
 function getCurrentContactId(
   contacts: StoreSlices['contacts'],
   evaluations: StoreSlices['evaluations'],
+  sessionId?: string,
 ): string | undefined {
   const evaluatedIds = new Set(
-    Object.values(evaluations).map(item => item.contactId),
+    getSessionEvaluationList(evaluations, sessionId).map(
+      item => item.contactId,
+    ),
   );
   return contacts.find(contact => !evaluatedIds.has(contact.id))?.id;
 }
@@ -81,8 +107,10 @@ export const createEvaluationSlice: StateCreator<
       return;
     }
 
-    const existingEvaluation = Object.values(evaluations).find(
-      item => item.contactId === selectedContactId,
+    const existingEvaluation = findSessionEvaluationForContact(
+      evaluations,
+      session.id,
+      selectedContactId,
     );
     const nextScores = deriveScoresFromMatrixSelection(selection);
     const evaluation: ContactEvaluation = {
@@ -109,7 +137,11 @@ export const createEvaluationSlice: StateCreator<
       ...evaluations,
       [evaluation.id]: evaluation,
     };
-    const processedCount = Object.keys(nextEvaluations).length;
+    const sessionEvaluations = getSessionEvaluationList(
+      nextEvaluations,
+      session.id,
+    );
+    const processedCount = sessionEvaluations.length;
     const nextSession = {
       ...session,
       processedCount,
@@ -118,8 +150,9 @@ export const createEvaluationSlice: StateCreator<
     const nextSelectedContactId = getCurrentContactId(
       contacts,
       nextEvaluations,
+      session.id,
     );
-    const reviewQueueIds = Object.values(nextEvaluations)
+    const reviewQueueIds = sessionEvaluations
       .filter(item => item.skipped || item.confidence < 0.8)
       .map(item => item.contactId);
 
@@ -155,8 +188,14 @@ export const createEvaluationSlice: StateCreator<
 
     set({
       session,
-      selectedContactId: contacts[0]?.id,
+      evaluations: {},
+      clusters: [],
+      insights: [],
+      reviewQueueIds: [],
+      selectedContactId: getCurrentContactId(contacts, {}, session.id),
     });
+
+    await get().refreshDerivedState();
   },
   commitGestureEvaluation: async gesture => {
     const { session, selectedContactId, contacts, evaluations, settings } =
@@ -165,8 +204,10 @@ export const createEvaluationSlice: StateCreator<
       return;
     }
 
-    const existingEvaluation = Object.values(evaluations).find(
-      item => item.contactId === selectedContactId,
+    const existingEvaluation = findSessionEvaluationForContact(
+      evaluations,
+      session.id,
+      selectedContactId,
     );
     const nextScores = deriveScoresFromGesture(
       existingEvaluation?.scores ?? DEFAULT_SCORES,
@@ -196,7 +237,11 @@ export const createEvaluationSlice: StateCreator<
       ...evaluations,
       [evaluation.id]: evaluation,
     };
-    const processedCount = Object.keys(nextEvaluations).length;
+    const sessionEvaluations = getSessionEvaluationList(
+      nextEvaluations,
+      session.id,
+    );
+    const processedCount = sessionEvaluations.length;
     const nextSession = {
       ...session,
       processedCount,
@@ -205,8 +250,9 @@ export const createEvaluationSlice: StateCreator<
     const nextSelectedContactId = getCurrentContactId(
       contacts,
       nextEvaluations,
+      session.id,
     );
-    const reviewQueueIds = Object.values(nextEvaluations)
+    const reviewQueueIds = sessionEvaluations
       .filter(item => item.skipped || item.confidence < 0.8)
       .map(item => item.contactId);
 
@@ -251,15 +297,20 @@ export const createEvaluationSlice: StateCreator<
       ...evaluations,
       [evaluation.id]: evaluation,
     };
+    const sessionEvaluations = getSessionEvaluationList(
+      nextEvaluations,
+      session.id,
+    );
     const nextSession = {
       ...session,
-      processedCount: Object.keys(nextEvaluations).length,
-      skippedCount: session.skippedCount + 1,
+      processedCount: sessionEvaluations.length,
+      skippedCount: sessionEvaluations.filter(item => item.skipped).length,
       updatedAt: now,
     };
     const nextSelectedContactId = getCurrentContactId(
       contacts,
       nextEvaluations,
+      session.id,
     );
 
     set({
@@ -277,10 +328,14 @@ export const createEvaluationSlice: StateCreator<
     await get().refreshDerivedState();
   },
   undoLastEvaluation: async () => {
-    const { evaluations, contacts } = get();
-    const latestEvaluation = [...Object.values(evaluations)].sort(
-      (left, right) => right.updatedAt.localeCompare(left.updatedAt),
-    )[0];
+    const { session, evaluations, contacts } = get();
+    if (!session) {
+      return;
+    }
+
+    const latestEvaluation = [
+      ...getSessionEvaluationList(evaluations, session.id),
+    ].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
 
     if (!latestEvaluation) {
       return;
@@ -293,7 +348,7 @@ export const createEvaluationSlice: StateCreator<
       evaluations: nextEvaluations,
       selectedContactId:
         latestEvaluation.contactId ??
-        getCurrentContactId(contacts, nextEvaluations),
+        getCurrentContactId(contacts, nextEvaluations, session.id),
     });
 
     await getDataRepository().deleteEvaluation(latestEvaluation.id);
@@ -301,9 +356,13 @@ export const createEvaluationSlice: StateCreator<
   },
   openContactDetail: contactId => set({ selectedContactId: contactId }),
   closeContactDetail: () => {
-    const { contacts, evaluations } = get();
+    const { contacts, evaluations, session } = get();
     set({
-      selectedContactId: getCurrentContactId(contacts, evaluations),
+      selectedContactId: getCurrentContactId(
+        contacts,
+        evaluations,
+        session?.id,
+      ),
     });
   },
   saveContactDetail: async input => {
@@ -312,8 +371,10 @@ export const createEvaluationSlice: StateCreator<
       return;
     }
 
-    const existingEvaluation = Object.values(evaluations).find(
-      item => item.contactId === input.contactId,
+    const existingEvaluation = findSessionEvaluationForContact(
+      evaluations,
+      session.id,
+      input.contactId,
     );
     const nextEvaluation: ContactEvaluation = {
       id: existingEvaluation?.id ?? createId(),
@@ -349,8 +410,8 @@ export const createEvaluationSlice: StateCreator<
     await get().refreshDerivedState();
   },
   refreshDerivedState: async () => {
-    const { contacts, evaluations, analysisMode } = get();
-    const evaluationList = Object.values(evaluations);
+    const { contacts, evaluations, analysisMode, session } = get();
+    const evaluationList = getSessionEvaluationList(evaluations, session?.id);
     const dataRepository = getDataRepository();
     const clusters = await dataRepository.syncClusters(
       contacts,

@@ -35,12 +35,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ContactDetail'>;
 export function ContactDetailScreen({ navigation, route }: Props) {
   const theme = useAppTheme();
   const dismissOffset = useSharedValue(0);
+  const sessionId = useAppStore(state => state.session?.id);
   const contact = useAppStore(state =>
     state.contacts.find(item => item.id === route.params.contactId),
   );
   const evaluation = useAppStore(state =>
     Object.values(state.evaluations).find(
-      item => item.contactId === route.params.contactId,
+      item =>
+        item.sessionId === sessionId &&
+        item.contactId === route.params.contactId,
     ),
   );
   const saveContactDetail = useAppStore(state => state.saveContactDetail);

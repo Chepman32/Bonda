@@ -2,9 +2,85 @@ import '@testing-library/jest-native/extend-expect';
 import '@shopify/react-native-skia/jestSetup';
 
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => undefined;
-  return Reanimated;
+  const { FlatList, Image, ScrollView, Text, View } = require('react-native');
+
+  const interpolate = (
+    value: number,
+    inputRange: number[],
+    outputRange: number[],
+  ) => {
+    if (inputRange.length === 0 || outputRange.length === 0) {
+      return value;
+    }
+
+    if (value <= inputRange[0]) {
+      return outputRange[0];
+    }
+
+    const lastIndex = inputRange.length - 1;
+    if (value >= inputRange[lastIndex]) {
+      return outputRange[lastIndex];
+    }
+
+    for (let index = 1; index <= lastIndex; index += 1) {
+      if (value <= inputRange[index]) {
+        const inputStart = inputRange[index - 1];
+        const inputEnd = inputRange[index];
+        const outputStart = outputRange[index - 1];
+        const outputEnd = outputRange[index];
+        const progress = (value - inputStart) / (inputEnd - inputStart);
+
+        return outputStart + (outputEnd - outputStart) * progress;
+      }
+    }
+
+    return outputRange[lastIndex];
+  };
+
+  const Animated = {
+    View,
+    Text,
+    Image,
+    ScrollView,
+    FlatList,
+    createAnimatedComponent: (Component: unknown) => Component,
+    Extrapolation: {
+      CLAMP: 'clamp',
+    },
+    Easing: {
+      ease: (value: number) => value,
+      inOut: (fn: (value: number) => number) => fn,
+    },
+    addWhitelistedNativeProps: jest.fn(),
+    addWhitelistedUIProps: jest.fn(),
+    cancelAnimation: jest.fn(),
+    clamp: (value: number, lower: number, upper: number) =>
+      Math.min(Math.max(value, lower), upper),
+    interpolate,
+    runOnJS:
+      <Args extends unknown[], Return>(fn: (...args: Args) => Return) =>
+      (...args: Args) =>
+        fn(...args),
+    useAnimatedStyle: (updater: () => Record<string, unknown>) => updater(),
+    useSharedValue: <Value>(initialValue: Value) => ({ value: initialValue }),
+    withRepeat: (value: unknown) => value,
+    withSequence: (...values: unknown[]) => values[values.length - 1],
+    withSpring: (value: unknown) => value,
+    withTiming: (
+      value: unknown,
+      _config?: Record<string, unknown>,
+      callback?: (finished: boolean) => void,
+    ) => {
+      callback?.(true);
+      return value;
+    },
+  };
+
+  return {
+    __esModule: true,
+    ...Animated,
+    default: Animated,
+  };
 });
 
 jest.mock('react-native-gesture-handler', () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -17,21 +17,19 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import {
-  CheckCircle,
-  Heart,
-  RotateCcw,
-  Star,
-  X,
-  Zap,
-} from 'lucide-react-native';
+import { CheckCircle, Heart, RotateCcw, X, Zap } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { EvaluationDotMatrix } from '@/components/EvaluationDotMatrix';
 import { GlassCard } from '@/components/GlassCard';
 import { Screen } from '@/components/Screen';
 import { useHotReloadContactAvatars } from '@/hooks/useHotReloadContactAvatars';
 import { ROUTES } from '@/navigation/routes';
 import type { RootStackParamList } from '@/navigation/types';
+import {
+  deriveColumnSelectionsFromScores,
+  type MatrixCommit,
+} from '@/services/scoringService';
 import { useAppStore } from '@/store/useAppStore';
 import { useAppTheme } from '@/theme';
 
@@ -41,6 +39,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 100;
 const VELOCITY_THRESHOLD = 500;
 const STAMP_OPACITY_DISTANCE = 80;
+const MATRIX_COLUMN_COUNT: MatrixCommit['columnCount'] = 5;
+const MATRIX_ROW_COUNT: MatrixCommit['rowCount'] = 9;
 
 const PORTRAIT_GRADIENTS = [
   ['#7C3AED', '#312E81'],
@@ -63,6 +63,18 @@ function normalizeAvatarUri(uri: string): string {
   return `file://${uri}`;
 }
 
+function isMatrixComplete(selections: Record<number, number>): boolean {
+  return Object.keys(selections).length >= MATRIX_COLUMN_COUNT;
+}
+
+function buildMatrixSelections(
+  scores?: Parameters<typeof deriveColumnSelectionsFromScores>[0],
+): Record<number, number> {
+  return scores
+    ? deriveColumnSelectionsFromScores(scores, MATRIX_ROW_COUNT)
+    : {};
+}
+
 export function EvaluationDeckScreen({ navigation }: Props) {
   const theme = useAppTheme();
   const contacts = useAppStore(state => state.contacts);
@@ -72,20 +84,46 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   const commitGestureEvaluation = useAppStore(
     state => state.commitGestureEvaluation,
   );
+  const commitMatrixEvaluation = useAppStore(
+    state => state.commitMatrixEvaluation,
+  );
   const skipCurrentContact = useAppStore(state => state.skipCurrentContact);
   const undoLastEvaluation = useAppStore(state => state.undoLastEvaluation);
-  const saveContactDetail = useAppStore(state => state.saveContactDetail);
   const completeSession = useAppStore(state => state.completeSession);
 
   useHotReloadContactAvatars();
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const [matrixSelections, setMatrixSelections] = useState<
+    Record<number, number>
+  >({});
+  const [matrixTouched, setMatrixTouched] = useState(false);
+  const [matrixLocked, setMatrixLocked] = useState(false);
+  const [advanceAnimationToken, setAdvanceAnimationToken] = useState(0);
 
   const currentContact = contacts.find(
     contact => contact.id === selectedContactId,
   );
-  const processedCount = Object.keys(evaluations).length;
+  const currentEvaluation = useMemo(() => {
+    if (!session || !selectedContactId) {
+      return undefined;
+    }
+
+    return Object.values(evaluations).find(
+      evaluation =>
+        evaluation.sessionId === session.id &&
+        evaluation.contactId === selectedContactId,
+    );
+  }, [evaluations, selectedContactId, session]);
+  const processedCount = Object.values(evaluations).filter(
+    evaluation => evaluation.sessionId === session?.id,
+  ).length;
+  const isDeepMode = session?.mode === 'deep';
+  const isSessionComplete =
+    Boolean(session) &&
+    contacts.length > 0 &&
+    processedCount >= contacts.length;
 
   useEffect(() => {
     if (
@@ -96,17 +134,51 @@ export function EvaluationDeckScreen({ navigation }: Props) {
     ) {
       return;
     }
+
     void completeSession().then(() => {
       navigation.replace(ROUTES.Summary);
     });
   }, [completeSession, contacts.length, navigation, processedCount, session]);
 
-  // Reset card position when contact changes
   useEffect(() => {
     translateX.value = 0;
     translateY.value = 0;
+    setMatrixSelections(buildMatrixSelections(currentEvaluation?.scores));
+    setMatrixTouched(false);
+    setMatrixLocked(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentContact?.id]);
+  }, [currentContact?.id, currentEvaluation?.updatedAt]);
+
+  useEffect(() => {
+    if (
+      !isDeepMode ||
+      !currentContact ||
+      matrixLocked ||
+      !matrixTouched ||
+      !isMatrixComplete(matrixSelections)
+    ) {
+      return;
+    }
+
+    setMatrixLocked(true);
+    setAdvanceAnimationToken(token => token + 1);
+
+    void commitMatrixEvaluation({
+      selections: matrixSelections,
+      columnCount: MATRIX_COLUMN_COUNT,
+      rowCount: MATRIX_ROW_COUNT,
+    }).catch(() => {
+      setMatrixLocked(false);
+      setMatrixTouched(false);
+    });
+  }, [
+    commitMatrixEvaluation,
+    currentContact,
+    isDeepMode,
+    matrixLocked,
+    matrixSelections,
+    matrixTouched,
+  ]);
 
   const commitLike = useCallback(() => {
     void commitGestureEvaluation({
@@ -121,20 +193,26 @@ export function EvaluationDeckScreen({ navigation }: Props) {
     void skipCurrentContact();
   }, [skipCurrentContact]);
 
-  const commitStar = useCallback(() => {
-    if (!currentContact) return;
-    void commitGestureEvaluation({
-      translationX: 200,
-      translationY: -50,
-      velocityX: 1000,
-      velocityY: 0,
-    }).then(() => {
-      void saveContactDetail({
-        contactId: currentContact.id,
-        pinnedToCore: true,
+  const handleMatrixSelection = useCallback(
+    (colIndex: number, rowIndex: number) => {
+      if (matrixLocked) {
+        return;
+      }
+
+      setMatrixSelections(current => {
+        if (current[colIndex] === rowIndex) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [colIndex]: rowIndex,
+        };
       });
-    });
-  }, [commitGestureEvaluation, currentContact, saveContactDetail]);
+      setMatrixTouched(true);
+    },
+    [matrixLocked],
+  );
 
   const animateOffRight = useCallback(
     (onDone: () => void) => {
@@ -204,19 +282,31 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   }));
 
   if (!currentContact) {
+    const showSummaryAction =
+      session?.status === 'completed' || isSessionComplete;
+
     return (
       <Screen contentStyle={styles.empty}>
         <GlassCard style={styles.emptyCard}>
           <Text style={[styles.emptyTitle, { color: theme.text }]}>
-            Your deck is ready for summary.
+            {showSummaryAction
+              ? 'Your deck is ready for summary.'
+              : 'Preparing your next contact.'}
           </Text>
-          <Text
-            accessibilityRole="button"
-            onPress={() => navigation.replace(ROUTES.Summary)}
-            style={styles.emptyAction}
-          >
-            Go to summary
+          <Text style={[styles.emptyBody, { color: theme.textMuted }]}>
+            {showSummaryAction
+              ? 'Go to summary when you are ready.'
+              : 'The deck is still active, so summary stays locked until the session is actually complete.'}
           </Text>
+          {showSummaryAction ? (
+            <Text
+              accessibilityRole="button"
+              onPress={() => navigation.replace(ROUTES.Summary)}
+              style={styles.emptyAction}
+            >
+              Go to summary
+            </Text>
+          ) : null}
         </GlassCard>
       </Screen>
     );
@@ -226,9 +316,8 @@ export function EvaluationDeckScreen({ navigation }: Props) {
     ? normalizeAvatarUri(currentContact.avatarUri)
     : undefined;
   const gradientColors = paletteForSeed(currentContact.avatarSeed);
-
-  const totalBars = Math.min(contacts.length, 20);
-  const filledBars = Math.min(processedCount, totalBars);
+  const totalBars = contacts.length;
+  const filledBars = processedCount;
 
   const tags: string[] = [];
   if (currentContact.company) tags.push(currentContact.company);
@@ -236,16 +325,15 @@ export function EvaluationDeckScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Progress bars */}
       <View style={styles.progressBars}>
-        {Array.from({ length: totalBars }).map((_, i) => (
+        {Array.from({ length: totalBars }).map((_, index) => (
           <View
-            key={i}
+            key={index}
             style={[
               styles.progressBar,
               {
                 backgroundColor:
-                  i < filledBars
+                  index < filledBars
                     ? 'rgba(255,255,255,0.9)'
                     : 'rgba(255,255,255,0.3)',
               },
@@ -254,119 +342,148 @@ export function EvaluationDeckScreen({ navigation }: Props) {
         ))}
       </View>
 
-      {/* Swipeable card */}
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.card, cardStyle]}>
-          {/* Full-screen avatar background */}
-          {avatarUri ? (
-            <Image
-              accessibilityIgnoresInvertColors
-              source={{ uri: avatarUri }}
-              style={StyleSheet.absoluteFillObject}
-              resizeMode="cover"
-            />
-          ) : (
-            <LinearGradient
-              colors={[...gradientColors]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-          )}
-
-          {/* LIKE stamp */}
-          <Animated.View style={[styles.likeStamp, likeStampStyle]}>
-            <Text style={styles.likeStampText}>LIKE</Text>
-          </Animated.View>
-
-          {/* NOPE stamp */}
-          <Animated.View style={[styles.nopeStamp, nopeStampStyle]}>
-            <Text style={styles.nopeStampText}>NOPE</Text>
-          </Animated.View>
-
-          {/* Bottom gradient overlay + info */}
-          <View style={styles.bottomOverlay}>
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.9)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFillObject}
-            />
-            {/* Name row */}
-            <View style={styles.nameRow}>
-              <Text style={styles.contactName}>
-                {currentContact.displayName}
+      {isDeepMode ? (
+        <View style={styles.card}>
+          <ContactBackdrop
+            avatarUri={avatarUri}
+            gradientColors={gradientColors}
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.18)', 'rgba(0,0,0,0.9)']}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <View style={styles.deepOverlay}>
+            <View style={styles.deepIntro}>
+              <Text style={styles.deepEyebrow}>Deep pass</Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.contactName}>
+                  {currentContact.displayName}
+                </Text>
+                {avatarUri ? (
+                  <CheckCircle
+                    size={20}
+                    color="#3B82F6"
+                    fill="#3B82F6"
+                    strokeWidth={0}
+                  />
+                ) : null}
+              </View>
+              {tags.length > 0 ? (
+                <View style={styles.tagRow}>
+                  {tags.map(tag => (
+                    <View key={tag} style={styles.tagPill}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+              <Text style={styles.deepHint}>
+                Drag or tap through the matrix to score the relationship without
+                swiping the card away.
               </Text>
-              {avatarUri ? (
-                <CheckCircle
-                  size={20}
-                  color="#3B82F6"
-                  fill="#3B82F6"
-                  strokeWidth={0}
-                />
+            </View>
+            <View style={styles.deepMatrixShell}>
+              <EvaluationDotMatrix
+                advanceAnimationToken={advanceAnimationToken}
+                interactionDisabled={matrixLocked}
+                onColumnPanUpdate={handleMatrixSelection}
+                onColumnSelect={handleMatrixSelection}
+                selections={matrixSelections}
+              />
+            </View>
+          </View>
+        </View>
+      ) : (
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.card, cardStyle]}>
+            <ContactBackdrop
+              avatarUri={avatarUri}
+              gradientColors={gradientColors}
+            />
+            <Animated.View style={[styles.likeStamp, likeStampStyle]}>
+              <Text style={styles.likeStampText}>LIKE</Text>
+            </Animated.View>
+            <Animated.View style={[styles.nopeStamp, nopeStampStyle]}>
+              <Text style={styles.nopeStampText}>NOPE</Text>
+            </Animated.View>
+            <View style={styles.bottomOverlay}>
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.9)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              <View style={styles.nameRow}>
+                <Text style={styles.contactName}>
+                  {currentContact.displayName}
+                </Text>
+                {avatarUri ? (
+                  <CheckCircle
+                    size={20}
+                    color="#3B82F6"
+                    fill="#3B82F6"
+                    strokeWidth={0}
+                  />
+                ) : null}
+              </View>
+              {tags.length > 0 ? (
+                <View style={styles.tagRow}>
+                  {tags.map(tag => (
+                    <View key={tag} style={styles.tagPill}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
               ) : null}
             </View>
+          </Animated.View>
+        </GestureDetector>
+      )}
 
-            {/* Tag pills */}
-            {tags.length > 0 ? (
-              <View style={styles.tagRow}>
-                {tags.map(tag => (
-                  <View key={tag} style={styles.tagPill}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : null}
-          </View>
-        </Animated.View>
-      </GestureDetector>
-
-      {/* Action buttons */}
       <View style={styles.actionRow}>
-        {/* Undo */}
-        <ActionButton
-          onPress={() => void undoLastEvaluation()}
-          color="#F97316"
-          size={54}
-        >
-          <RotateCcw color="#F97316" size={22} />
-        </ActionButton>
+        {processedCount > 0 ? (
+          <ActionButton
+            color="#F97316"
+            label="Undo"
+            onPress={() => void undoLastEvaluation()}
+            size={54}
+          >
+            <RotateCcw color="#F97316" size={22} />
+          </ActionButton>
+        ) : null}
 
-        {/* Nope */}
         <ActionButton
-          onPress={() => animateOffLeft(commitNope)}
           color="#EF4444"
+          label="Skip"
+          onPress={() =>
+            isDeepMode ? commitNope() : animateOffLeft(commitNope)
+          }
           size={62}
         >
           <X color="#EF4444" size={28} />
         </ActionButton>
 
-        {/* Star */}
-        <ActionButton
-          onPress={() => animateOffRight(commitStar)}
-          color="#3B82F6"
-          size={54}
-        >
-          <Star color="#3B82F6" size={22} />
-        </ActionButton>
+        {!isDeepMode ? (
+          <ActionButton
+            color="#22C55E"
+            label="Like"
+            onPress={() => animateOffRight(commitLike)}
+            size={62}
+          >
+            <Heart color="#22C55E" size={28} />
+          </ActionButton>
+        ) : null}
 
-        {/* Like */}
         <ActionButton
-          onPress={() => animateOffRight(commitLike)}
-          color="#22C55E"
-          size={62}
-        >
-          <Heart color="#22C55E" size={28} />
-        </ActionButton>
-
-        {/* Bolt / Deep dive */}
-        <ActionButton
+          color="#A855F7"
+          label="Detail"
           onPress={() =>
             navigation.navigate(ROUTES.ContactDetail, {
               contactId: currentContact.id,
             })
           }
-          color="#A855F7"
           size={54}
         >
           <Zap color="#A855F7" size={22} />
@@ -376,12 +493,42 @@ export function EvaluationDeckScreen({ navigation }: Props) {
   );
 }
 
+function ContactBackdrop({
+  avatarUri,
+  gradientColors,
+}: {
+  avatarUri?: string;
+  gradientColors: readonly [string, string];
+}) {
+  if (avatarUri) {
+    return (
+      <Image
+        accessibilityIgnoresInvertColors
+        source={{ uri: avatarUri }}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      />
+    );
+  }
+
+  return (
+    <LinearGradient
+      colors={[...gradientColors]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={StyleSheet.absoluteFillObject}
+    />
+  );
+}
+
 function ActionButton({
+  label,
   onPress,
   color,
   size,
   children,
 }: {
+  label: string;
   onPress: () => void;
   color: string;
   size: number;
@@ -389,6 +536,8 @@ function ActionButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
       onPress={onPress}
       style={[
         styles.actionButton,
@@ -416,7 +565,7 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     flexDirection: 'row',
-    gap: 4,
+    gap: 2,
     zIndex: 10,
   },
   progressBar: {
@@ -476,6 +625,36 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingHorizontal: 20,
   },
+  deepOverlay: {
+    flex: 1,
+    paddingTop: 96,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    gap: 24,
+  },
+  deepIntro: {
+    gap: 12,
+  },
+  deepEyebrow: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  deepHint: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 14,
+    lineHeight: 21,
+    maxWidth: 320,
+  },
+  deepMatrixShell: {
+    flex: 1,
+    minHeight: 340,
+    padding: 12,
+    borderRadius: 32,
+    backgroundColor: 'rgba(3, 8, 19, 0.28)',
+  },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,7 +670,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 8,
   },
   tagPill: {
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -529,6 +707,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
+  },
+  emptyBody: {
+    fontSize: 15,
+    lineHeight: 22,
   },
   emptyAction: {
     fontSize: 16,
