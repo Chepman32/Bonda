@@ -43,12 +43,6 @@ const THEME_OPTIONS: Array<{
     swatch: themes.solar.background,
     textColor: themes.solar.text,
   },
-  {
-    mode: 'mono',
-    label: 'Mono',
-    swatch: themes.mono.background,
-    textColor: themes.mono.text,
-  },
 ];
 
 export function SettingsScreen({ navigation }: Props) {

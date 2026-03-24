@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS } from '@/constants/app';
-import type { AppSettings } from '@/models/entities';
+import type { AppSettings, ThemeMode } from '@/models/entities';
 import { getOrCreateEncryptionKey } from '@/services/persistence/keychain';
 import {
   initializeKeyValueStorage,
@@ -7,6 +7,24 @@ import {
 } from '@/services/persistence/mmkv';
 
 const SETTINGS_KEY = 'app.settings';
+const VALID_THEME_MODES = new Set<ThemeMode>([
+  'system',
+  'light',
+  'dark',
+  'solar',
+]);
+
+function normalizeThemeMode(themeMode: string | undefined): ThemeMode {
+  if (themeMode === 'mono') {
+    return 'dark';
+  }
+
+  if (themeMode && VALID_THEME_MODES.has(themeMode as ThemeMode)) {
+    return themeMode as ThemeMode;
+  }
+
+  return DEFAULT_SETTINGS.themeMode;
+}
 
 export class SettingsRepository {
   private storage?: KeyValueStorage;
@@ -30,9 +48,12 @@ export class SettingsRepository {
     }
 
     try {
+      const parsedSettings = JSON.parse(rawValue) as Partial<AppSettings>;
+
       return {
         ...DEFAULT_SETTINGS,
-        ...(JSON.parse(rawValue) as Partial<AppSettings>),
+        ...parsedSettings,
+        themeMode: normalizeThemeMode(parsedSettings.themeMode),
       };
     } catch {
       return DEFAULT_SETTINGS;
@@ -41,8 +62,13 @@ export class SettingsRepository {
 
   public async saveSettings(nextSettings: AppSettings): Promise<AppSettings> {
     const storage = await this.ensureStorage();
-    storage.set(SETTINGS_KEY, JSON.stringify(nextSettings));
-    return nextSettings;
+    const normalizedSettings: AppSettings = {
+      ...nextSettings,
+      themeMode: normalizeThemeMode(nextSettings.themeMode),
+    };
+
+    storage.set(SETTINGS_KEY, JSON.stringify(normalizedSettings));
+    return normalizedSettings;
   }
 
   public async mergeSettings(

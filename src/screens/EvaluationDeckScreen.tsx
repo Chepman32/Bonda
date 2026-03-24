@@ -17,7 +17,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import { CheckCircle, Heart, RotateCcw, X, Zap } from 'lucide-react-native';
+import {
+  CheckCircle,
+  ChevronLeft,
+  Heart,
+  RotateCcw,
+  X,
+  Zap,
+} from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { EvaluationDotMatrix } from '@/components/EvaluationDotMatrix';
@@ -325,6 +332,16 @@ export function EvaluationDeckScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        accessibilityLabel="Back"
+        accessibilityRole="button"
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        hitSlop={8}
+      >
+        <ChevronLeft color="#FFFFFF" size={28} strokeWidth={2.5} />
+      </Pressable>
+
       <View style={styles.progressBars}>
         {Array.from({ length: totalBars }).map((_, index) => (
           <View
@@ -559,10 +576,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  backButton: {
+    position: 'absolute',
+    top: 68,
+    left: 8,
+    zIndex: 20,
+    padding: 4,
+  },
   progressBars: {
     position: 'absolute',
     top: 56,
-    left: 12,
+    left: 44,
     right: 12,
     flexDirection: 'row',
     gap: 2,

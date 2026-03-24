@@ -55,23 +55,6 @@ export const themes = {
     success: '#3E8A5F',
     warning: '#B86800',
   },
-  mono: {
-    isDark: true,
-    backdrop: ['#141414', '#1A1A1A', '#202020'] as string[],
-    background: '#1A1A1A',
-    backgroundSecondary: '#242424',
-    panel: 'rgba(255, 255, 255, 0.07)',
-    panelStrong: 'rgba(255, 255, 255, 0.12)',
-    text: '#E8E8E8',
-    textMuted: '#888888',
-    border: 'rgba(255, 255, 255, 0.10)',
-    accent: '#C8C8C8',
-    accentMuted: '#999999',
-    glow: 'rgba(255, 255, 255, 0.08)',
-    danger: '#CC6666',
-    success: '#66AA88',
-    warning: '#BBAA66',
-  },
 };
 
 export type AppTheme = (typeof themes)[keyof typeof themes] & {
@@ -92,8 +75,6 @@ export function useAppTheme(): AppTheme {
     base = themes.dark;
   } else if (themeMode === 'solar') {
     base = themes.solar;
-  } else if (themeMode === 'mono') {
-    base = themes.mono;
   } else {
     base = scheme === 'light' ? themes.light : themes.dark;
   }

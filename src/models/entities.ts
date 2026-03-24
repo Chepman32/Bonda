@@ -1,4 +1,4 @@
-export type ThemeMode = 'system' | 'light' | 'dark' | 'solar' | 'mono';
+export type ThemeMode = 'system' | 'light' | 'dark' | 'solar';
 export type EvaluationMode = 'quick' | 'deep' | 'group' | 'resume';
 export type SessionStatus = 'draft' | 'active' | 'paused' | 'completed';
 export type ContactSource = 'device' | 'demo';
