@@ -1,5 +1,14 @@
-import React, { useMemo } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { X } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { BubbleMap } from '@/components/BubbleMap';
@@ -34,6 +43,8 @@ export function SummaryScreen({ navigation }: Props) {
   const analysisMode = useAppStore(state => state.analysisMode);
   const setAnalysisMode = useAppStore(state => state.setAnalysisMode);
 
+  const [detailsVisible, setDetailsVisible] = useState(false);
+
   const evaluationList = Object.values(evaluations);
   const metrics = useMemo(
     () => computeSummaryMetrics(evaluationList),
@@ -60,36 +71,9 @@ export function SummaryScreen({ navigation }: Props) {
           })
         }
       />
-      <GlassCard style={styles.metricRow}>
-        <SummaryMetric label="Core" value={Math.round(metrics.coreScore)} />
-        <SummaryMetric label="Warmth" value={Math.round(metrics.warmth)} />
-        <SummaryMetric
-          label="Support"
-          value={Math.round(metrics.supportDensity)}
-        />
-      </GlassCard>
-      <View style={styles.modeRow}>
-        {modes.map(mode => (
-          <Text
-            key={mode}
-            onPress={() => setAnalysisMode(mode)}
-            style={[
-              styles.modePill,
-              {
-                color: analysisMode === mode ? theme.text : theme.textMuted,
-                borderColor:
-                  analysisMode === mode ? theme.accent : theme.border,
-              },
-            ]}
-          >
-            {mode}
-          </Text>
-        ))}
-      </View>
-      <FlatList
-        data={insights}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => <InsightCard insight={item} />}
+      <PrimaryButton
+        label="View Details"
+        onPress={() => setDetailsVisible(true)}
       />
       <View style={styles.actions}>
         <PrimaryButton
@@ -107,6 +91,70 @@ export function SummaryScreen({ navigation }: Props) {
           variant="secondary"
         />
       </View>
+
+      <Modal
+        visible={detailsVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setDetailsVisible(false)}
+      >
+        <SafeAreaView
+          style={[styles.modalContainer, { backgroundColor: theme.background }]}
+        >
+          {/* Modal header */}
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              Details
+            </Text>
+            <Pressable
+              onPress={() => setDetailsVisible(false)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <X color={theme.textMuted} size={22} />
+            </Pressable>
+          </View>
+
+          {/* Metrics */}
+          <GlassCard style={styles.metricRow}>
+            <SummaryMetric label="Core" value={Math.round(metrics.coreScore)} />
+            <SummaryMetric label="Warmth" value={Math.round(metrics.warmth)} />
+            <SummaryMetric
+              label="Support"
+              value={Math.round(metrics.supportDensity)}
+            />
+          </GlassCard>
+
+          {/* Mode filter pills */}
+          <View style={styles.modeRow}>
+            {modes.map(mode => (
+              <Text
+                key={mode}
+                onPress={() => setAnalysisMode(mode)}
+                style={[
+                  styles.modePill,
+                  {
+                    color: analysisMode === mode ? theme.text : theme.textMuted,
+                    borderColor:
+                      analysisMode === mode ? theme.accent : theme.border,
+                  },
+                ]}
+              >
+                {mode}
+              </Text>
+            ))}
+          </View>
+
+          {/* Insights list */}
+          <FlatList
+            data={insights}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => <InsightCard insight={item} />}
+            contentContainerStyle={styles.insightList}
+          />
+        </SafeAreaView>
+      </Modal>
     </Screen>
   );
 }
@@ -132,6 +180,26 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
+  },
+  actions: {
+    gap: 12,
+  },
+  modalContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    gap: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
   metricRow: {
     flexDirection: 'row',
@@ -162,7 +230,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'capitalize',
   },
-  actions: {
+  insightList: {
     gap: 12,
+    paddingBottom: 32,
   },
 });
