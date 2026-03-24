@@ -1,5 +1,13 @@
 import React from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { GlassCard } from '@/components/GlassCard';
@@ -8,6 +16,11 @@ import { Screen } from '@/components/Screen';
 import { ROUTES } from '@/navigation/routes';
 import type { ThemeMode } from '@/models/entities';
 import type { TabScreenProps } from '@/navigation/types';
+import {
+  enableBiometricLock,
+  getBiometricCapability,
+  type BiometricCapability,
+} from '@/services/device/biometricService';
 import { themes, useAppTheme } from '@/theme';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -53,10 +66,78 @@ export function SettingsScreen({ navigation }: Props) {
   const refreshDiagnostics = useAppStore(state => state.refreshDiagnostics);
   const shareDiagnostics = useAppStore(state => state.shareDiagnostics);
   const resetAllLocalData = useAppStore(state => state.resetAllLocalData);
+  const [biometricCapability, setBiometricCapability] =
+    React.useState<BiometricCapability | null>(null);
+  const [isUpdatingBiometricLock, setIsUpdatingBiometricLock] =
+    React.useState(false);
 
   React.useEffect(() => {
     void refreshDiagnostics();
   }, [refreshDiagnostics]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    void getBiometricCapability().then(capability => {
+      if (!cancelled) {
+        setBiometricCapability(capability);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const biometricToggleLabel =
+    biometricCapability?.toggleLabel ?? 'Use Face ID';
+  const biometricBody =
+    biometricCapability != null
+      ? `Require ${biometricCapability.label} every time Bonda opens.`
+      : 'Require Face ID every time Bonda opens. If Face ID is unavailable, Bonda will explain what needs to be enabled.';
+
+  const handleBiometricToggle = React.useCallback(
+    async (nextValue: boolean) => {
+      if (isUpdatingBiometricLock) {
+        return;
+      }
+
+      setIsUpdatingBiometricLock(true);
+
+      try {
+        if (nextValue) {
+          const capability =
+            biometricCapability ??
+            (await getBiometricCapability({ skipAuthCheck: true }));
+
+          if (!capability) {
+            Alert.alert(
+              'Face ID unavailable',
+              'Face ID is not available on this device or has not been configured yet.',
+            );
+            return;
+          }
+
+          await enableBiometricLock(capability);
+          setBiometricCapability(capability);
+          await updateSettings({ preferBiometricUnlock: true });
+          return;
+        }
+
+        await updateSettings({ preferBiometricUnlock: false });
+      } catch (error) {
+        Alert.alert(
+          'Biometric lock failed',
+          error instanceof Error
+            ? error.message
+            : 'Bonda could not update biometric protection.',
+        );
+      } finally {
+        setIsUpdatingBiometricLock(false);
+      }
+    },
+    [biometricCapability, isUpdatingBiometricLock, updateSettings],
+  );
 
   return (
     <Screen scroll>
@@ -167,6 +248,15 @@ export function SettingsScreen({ navigation }: Props) {
       </GlassCard>
 
       <GlassCard style={styles.card}>
+        {Platform.OS === 'ios' && (
+          <ToggleRow
+            label={biometricToggleLabel}
+            description={biometricBody}
+            value={settings.preferBiometricUnlock}
+            disabled={isUpdatingBiometricLock}
+            onValueChange={value => void handleBiometricToggle(value)}
+          />
+        )}
         <ToggleRow
           label="Reduce motion"
           value={settings.reducedMotion}
@@ -223,19 +313,37 @@ export function SettingsScreen({ navigation }: Props) {
 
 function ToggleRow({
   label,
+  description,
   value,
   onValueChange,
+  disabled = false,
 }: {
   label: string;
+  description?: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   const theme = useAppTheme();
 
   return (
     <View style={styles.toggleRow}>
-      <Text style={[styles.toggleLabel, { color: theme.text }]}>{label}</Text>
-      <Switch value={value} onValueChange={onValueChange} />
+      <View style={styles.toggleText}>
+        <Text
+          style={[
+            styles.toggleLabel,
+            { color: disabled ? theme.textMuted : theme.text },
+          ]}
+        >
+          {label}
+        </Text>
+        {description ? (
+          <Text style={[styles.toggleDescription, { color: theme.textMuted }]}>
+            {description}
+          </Text>
+        ) : null}
+      </View>
+      <Switch disabled={disabled} value={value} onValueChange={onValueChange} />
     </View>
   );
 }
@@ -290,12 +398,20 @@ const styles = StyleSheet.create({
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 16,
+  },
+  toggleText: {
+    flex: 1,
+    gap: 4,
   },
   toggleLabel: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  toggleDescription: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   actions: {
     gap: 12,

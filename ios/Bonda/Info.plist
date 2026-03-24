@@ -35,6 +35,8 @@
 	</dict>
 	<key>NSContactsUsageDescription</key>
 	<string>Bonda needs access to your contacts to build a private, on-device relationship map.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Bonda uses Face ID to protect your relationship map when you reopen the app.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

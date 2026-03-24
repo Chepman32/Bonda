@@ -180,8 +180,26 @@ jest.mock('react-native-fs', () => ({
 jest.mock('react-native-keychain', () => ({
   ACCESSIBLE: {
     AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 'accessible',
+    WHEN_PASSCODE_SET_THIS_DEVICE_ONLY: 'when-passcode-set',
   },
+  ACCESS_CONTROL: {
+    BIOMETRY_CURRENT_SET: 'biometry-current-set',
+    BIOMETRY_CURRENT_SET_OR_DEVICE_PASSCODE:
+      'biometry-current-set-or-device-passcode',
+  },
+  AUTHENTICATION_TYPE: {
+    BIOMETRICS: 'biometrics',
+  },
+  BIOMETRY_TYPE: {
+    FACE_ID: 'FaceID',
+    TOUCH_ID: 'TouchID',
+    OPTIC_ID: 'OpticID',
+  },
+  canImplyAuthentication: jest.fn(async () => true),
   getGenericPassword: jest.fn(async () => false),
+  getSupportedBiometryType: jest.fn(async () => 'FaceID'),
+  hasGenericPassword: jest.fn(async () => false),
+  resetGenericPassword: jest.fn(async () => true),
   setGenericPassword: jest.fn(async () => true),
 }));
 

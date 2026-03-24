@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { BiometricLockGate } from '@/components/BiometricLockGate';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { AppProviders } from '@/providers/AppProviders';
 import { useAppTheme } from '@/theme';
@@ -24,6 +25,7 @@ export default function App() {
       <AppProviders>
         <AppStatusBar />
         <AppNavigator />
+        <BiometricLockGate />
       </AppProviders>
     </AppErrorBoundary>
   );
